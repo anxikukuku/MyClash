@@ -1,10 +1,5 @@
 /**
  * mihomo 配置覆写脚本（精简版）
- *
- * 以目标 YAML 为唯一配置基准：
- * - 只保留目标 YAML 中实际存在的服务、规则集、策略组和功能
- * - 删除原脚本中未在目标 YAML 使用的：手动选择、负载均衡、倍率组、自建节点、链式代理、IP 优先、极简模式等
- * - 保留“机场订阅节点动态输入”的能力，策略组结构按目标 YAML 动态生成
  */
 
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
@@ -12,6 +7,10 @@ const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta
 // 定义全局排除节点的正则表达式，用于排除非地区节点
 const excludeFilter =
   /群|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|电报|无法|说明|使用|提示|访问|支持|教程|关注|更新|作者|加入|超时|收藏|优惠|福利|邀请|好友|失联|选择|剩余|公益|发布|DIZTNA|通路|登录|禁止|定时|渠道|牢记|永久|余额|阁下|本站|刷新|导航|建议|重置|以下|过滤|⚠️|@|t\.me\/\+|\bexpire\b|\bhttps?:\/\/|\.com|\btraffic\b/iu;
+
+// Mihomo 的 exclude-filter 字段必须是字符串，不能直接传 RegExp 对象。
+// 保留上面的 JS RegExp，同时转换成 Mihomo 可接受的字符串形式，并保留不区分大小写。
+const excludeFilterMihomo = `(?i)${excludeFilter.source}`;
 
 // 屏蔽国外QUIC
 const blockForeignQuic = [
@@ -168,7 +167,7 @@ function buildRegionGroups() {
       ...groupCommonSelect,
       name: region.name,
       filter: region.filter,
-      'exclude-filter': excludeFilter,
+      'exclude-filter': excludeFilterMihomo,
       'include-all': true,
       'exclude-type': 'direct',
       proxies: [`${region.name}-自动选择`],
@@ -178,7 +177,7 @@ function buildRegionGroups() {
       ...groupCommonAuto,
       name: `${region.name}-自动选择`,
       filter: region.filter,
-      'exclude-filter': excludeFilter,
+      'exclude-filter': excludeFilterMihomo,
     });
   }
 

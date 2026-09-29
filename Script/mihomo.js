@@ -343,6 +343,7 @@ const serviceConfigs = [
   {
     name: 'Google',
     baseOption: selectBaseOption,
+    defaultSelected: '日本',
     providers: {
       google: {
         ...ruleProviderCommonDomain,
@@ -419,6 +420,7 @@ const serviceConfigs = [
   {
     name: 'Twitter',
     baseOption: selectBaseOption,
+    defaultSelected: '日本',
     providers: {
       twitter: {
         ...ruleProviderCommonDomain,
@@ -439,6 +441,7 @@ const serviceConfigs = [
   {
     name: 'Instagram',
     baseOption: selectBaseOption,
+    defaultSelected: '日本',
     providers: {
       meta: {
         ...ruleProviderCommonDomain,

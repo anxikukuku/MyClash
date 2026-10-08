@@ -1,1 +1,1 @@
-Annxihomo.js ：https://raw.githubusercontent.com/anxikukuku/MyClash/refs/heads/main/Script/Annximihomo.js
+Annxihomo.js ：https://raw.githubusercontent.com/anxikukuku/MyClash/refs/heads/main/Annximihomo.js

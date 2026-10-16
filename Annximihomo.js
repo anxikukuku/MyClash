@@ -241,12 +241,19 @@ for (var i = 0; i < serviceConfigs.length; i++) {
 }
 Compatible_With_Bettbox.policyGroupOptions = policyGroupOptions;
 
+// --- 零宽/不可见字符清洗机制 ---
+const invisibleCharsRegex = /[\u00AD\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u206F\uFEFF\u115F\u1160\u3164\uFFA0]/g;
+function toMatchableName(name) {
+  return typeof name === 'string' ? name.replace(invisibleCharsRegex, '') : name;
+}
+
 const regionMatchCache = new Map();
 function getMatchedRegions(proxyName) {
   if (regionMatchCache.has(proxyName)) return regionMatchCache.get(proxyName);
+  var matchableName = toMatchableName(proxyName);
   var regions = [];
   for (var i = 0; i < regionDefinitions.length; i++) {
-    if (regionDefinitions[i].regex.test(proxyName)) {
+    if (regionDefinitions[i].regex.test(matchableName)) {
       regions.push(regionDefinitions[i]);
     }
   }
@@ -290,11 +297,13 @@ function filterAndNormalizeProxies(config) {
     if (!proxy || !proxy.name || !proxy.type) continue;
     var type = String(proxy.type).toLowerCase();
     if (type === 'direct' || type === 'reject' || type === 'rematch') continue;
+    
+    var matchableName = toMatchableName(proxy.name);
     if (!filterNonRegionProxiesEnabled) {
       filteredRawProxies.push(proxy);
       continue;
     }
-    if (getMatchedRegions(proxy.name).length > 0 || !excludeFilter.test(proxy.name)) {
+    if (getMatchedRegions(proxy.name).length > 0 || !excludeFilter.test(matchableName)) {
       filteredRawProxies.push(proxy);
     }
   }
@@ -575,11 +584,13 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     return arr.indexOf(item) === idx;
   });
 
-  var globalGroup = Object.assign({}, groupCommonSelect, {
+  var globalGroup = {
     name: 'GLOBAL',
+    type: 'select',
     proxies: globalProxies,
-    icon: iconBaseUrl + 'Global.svg'
-  });
+    icon: iconBaseUrl + 'Global.svg',
+    hidden: true
+  };
 
   return {
     globalGroup: globalGroup,

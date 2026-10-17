@@ -13,7 +13,7 @@ const excludeFilter = /群|返利|循环|官网|客服|网站|网址|获取|订�
 
 const ruleOptionsEnable = {
   手动选择: true,
-  自动选择: true,
+  自动选择: false,
   负载均衡: false,
   FCM: true,
   YouTube: true,
@@ -26,7 +26,7 @@ const ruleOptionsEnable = {
   EHentai: true,
   Emby: true, 
   AdBlock: true,
-  生成地区自动选择组: true,
+  生成地区自动选择组: false,
   隐藏地区手动选择组: false,
   分流组添加所有节点: false,
   过滤非地区节点: true,

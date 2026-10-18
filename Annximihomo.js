@@ -957,6 +957,7 @@ function main(config) {
     .concat(baseControlGroups);
 
   var rulesList = [
+    'DOMAIN,cdn.jsdmirror.com,直连',
     'RULE-SET,private,直连',
     'RULE-SET,private_ip,直连,no-resolve'
   ];

@@ -119,13 +119,21 @@ const baseGroups = [
 
 const serviceConfigs = baseGroups.concat([
   {
-    name: 'AI',
-    defaultSelected: '美国',
-    icon: iconBaseUrl + 'OpenAI.svg',
+    name: 'FCM',
+    proxies: ['直连', '默认代理'],
+    icon: iconBaseUrl + 'Fcm.svg',
     providers: {
-      ai: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/category-ai-!cn.mrs', path: './ruleset/ai.mrs', 'path-in-bundle': 'geo/geosite/category-ai-!cn.mrs' }),
+      googlefcm: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/googlefcm.mrs', path: './ruleset/googlefcm.mrs', 'path-in-bundle': 'geo/geosite/googlefcm.mrs' }),
     },
-    rules: ['RULE-SET,ai,AI'],
+    rules: ['RULE-SET,googlefcm,FCM'],
+  },
+  {
+    name: 'YouTube',
+    icon: iconBaseUrl + 'YouTube.svg',
+    providers: {
+      youtube: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/youtube.mrs', path: './ruleset/youtube.mrs', 'path-in-bundle': 'geo/geosite/youtube.mrs' }),
+    },
+    rules: ['RULE-SET,youtube,YouTube'],
   },
   {
     name: 'Google',
@@ -137,42 +145,22 @@ const serviceConfigs = baseGroups.concat([
     rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google,no-resolve'],
   },
   {
-    name: 'Twitter',
-    icon: iconBaseUrl + 'Twitter.svg',
+    name: 'AI',
+    defaultSelected: '美国',
+    icon: iconBaseUrl + 'OpenAI.svg',
     providers: {
-      twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
-      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter_ip.mrs' }),
+      ai: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/category-ai-!cn.mrs', path: './ruleset/ai.mrs', 'path-in-bundle': 'geo/geosite/category-ai-!cn.mrs' }),
     },
-    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
+    rules: ['RULE-SET,ai,AI'],
   },
   {
     name: 'Telegram',
     icon: iconBaseUrl + 'Telegram.svg',
     providers: {
       telegram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/telegram.mrs', path: './ruleset/telegram.mrs', 'path-in-bundle': 'geo/geosite/telegram.mrs' }),
-      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram_ip.mrs' }),
+      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
     },
     rules: ['RULE-SET,telegram,Telegram', 'RULE-SET,telegram_ip,Telegram,no-resolve'],
-  },
-  {
-    name: 'Meta',
-    icon: iconBaseUrl + 'Meta.svg',
-    providers: {
-      meta: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/meta.mrs', path: './ruleset/meta.mrs', 'path-in-bundle': 'geo/geosite/meta.mrs' }),
-      instagram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/instagram.mrs', path: './ruleset/instagram.mrs', 'path-in-bundle': 'geo/geosite/instagram.mrs' }),
-    },
-    rules: [
-      'RULE-SET,meta,Meta',
-      'RULE-SET,instagram,Meta'
-    ],
-  },
-  {
-    name: 'YouTube',
-    icon: iconBaseUrl + 'YouTube.svg',
-    providers: {
-      youtube: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/youtube.mrs', path: './ruleset/youtube.mrs', 'path-in-bundle': 'geo/geosite/youtube.mrs' }),
-    },
-    rules: ['RULE-SET,youtube,YouTube'],
   },
   {
     name: 'TikTok',
@@ -185,13 +173,25 @@ const serviceConfigs = baseGroups.concat([
     rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok,no-resolve'],
   },
   {
-    name: 'EHentai',
-    defaultSelected: '美国',
-    icon: iconBaseUrl + 'EHentai.svg',
+    name: 'Twitter',
+    icon: iconBaseUrl + 'Twitter.svg',
     providers: {
-      ehentai: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/ehentai.mrs', path: './ruleset/ehentai.mrs', 'path-in-bundle': 'geo/geosite/ehentai.mrs' }),
+      twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
+      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
     },
-    rules: ['RULE-SET,ehentai,EHentai'],
+    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
+  },
+  {
+    name: 'Meta',
+    icon: iconBaseUrl + 'Meta.svg',
+    providers: {
+      meta: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/meta.mrs', path: './ruleset/meta.mrs', 'path-in-bundle': 'geo/geosite/meta.mrs' }),
+      instagram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/instagram.mrs', path: './ruleset/instagram.mrs', 'path-in-bundle': 'geo/geosite/instagram.mrs' }),
+    },
+    rules: [
+      'RULE-SET,meta,Meta',
+      'RULE-SET,instagram,Meta'
+    ],
   },
   {
     name: 'Emby',
@@ -216,13 +216,13 @@ const serviceConfigs = baseGroups.concat([
     ],
   },
   {
-    name: 'FCM',
-    proxies: ['直连', '默认代理'],
-    icon: iconBaseUrl + 'Fcm.svg',
+    name: 'EHentai',
+    defaultSelected: '美国',
+    icon: iconBaseUrl + 'EHentai.svg',
     providers: {
-      googlefcm: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/googlefcm.mrs', path: './ruleset/googlefcm.mrs', 'path-in-bundle': 'geo/geosite/googlefcm.mrs' }),
+      ehentai: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/ehentai.mrs', path: './ruleset/ehentai.mrs', 'path-in-bundle': 'geo/geosite/ehentai.mrs' }),
     },
-    rules: ['RULE-SET,googlefcm,FCM'],
+    rules: ['RULE-SET,ehentai,EHentai'],
   },
   {
     name: 'AdBlock',
@@ -959,15 +959,15 @@ function main(config) {
   var rulesList = [
     'DOMAIN,cdn.jsdmirror.com,直连',
     'RULE-SET,private,直连',
-    'RULE-SET,private_ip,直连,no-resolve'
+    'RULE-SET,geolocation-cn,直连'
   ];
   if (ruleOptionsEnable.屏蔽国外QUIC) {
     rulesList = rulesList.concat(blockForeignQuic);
   }
   rulesList = rulesList.concat(functionalRules).concat([
-    'RULE-SET,geolocation-cn,直连',
     'RULE-SET,geolocation-!cn,默认代理',
-    'RULE-SET,cn_ip,直连',
+    'RULE-SET,cn_ip,直连,no-resolve',
+    'RULE-SET,private_ip,直连,no-resolve',
     'MATCH,默认代理'
   ]);
 

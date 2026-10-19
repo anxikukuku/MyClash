@@ -153,6 +153,15 @@ const serviceConfigs = baseGroups.concat([
     },
     rules: ['RULE-SET,ai,AI'],
   },
+    {
+    name: 'Twitter',
+    icon: iconBaseUrl + 'Twitter.svg',
+    providers: {
+      twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
+      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
+    },
+    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
+  },
   {
     name: 'Telegram',
     icon: iconBaseUrl + 'Telegram.svg',
@@ -161,25 +170,6 @@ const serviceConfigs = baseGroups.concat([
       telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
     },
     rules: ['RULE-SET,telegram,Telegram', 'RULE-SET,telegram_ip,Telegram,no-resolve'],
-  },
-  {
-    name: 'TikTok',
-    defaultSelected: '日本',
-    icon: iconBaseUrl + 'TikTok.svg',
-    providers: {
-      tiktok: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/tiktok.mrs', path: './ruleset/tiktok.mrs', 'path-in-bundle': 'geo/geosite/tiktok.mrs' }),
-      tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok_ip.mrs' }),
-    },
-    rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok,no-resolve'],
-  },
-  {
-    name: 'Twitter',
-    icon: iconBaseUrl + 'Twitter.svg',
-    providers: {
-      twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
-      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
-    },
-    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
   },
   {
     name: 'Meta',
@@ -192,6 +182,16 @@ const serviceConfigs = baseGroups.concat([
       'RULE-SET,meta,Meta',
       'RULE-SET,instagram,Meta'
     ],
+  },
+  {
+    name: 'TikTok',
+    defaultSelected: '日本',
+    icon: iconBaseUrl + 'TikTok.svg',
+    providers: {
+      tiktok: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/tiktok.mrs', path: './ruleset/tiktok.mrs', 'path-in-bundle': 'geo/geosite/tiktok.mrs' }),
+      tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok_ip.mrs' }),
+    },
+    rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok,no-resolve'],
   },
   {
     name: 'Emby',

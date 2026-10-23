@@ -33,8 +33,6 @@ const ruleOptionsEnable = {
   屏蔽国外QUIC: true,
   代理IPV4优先: false,
   代理IPV6优先: false,
-  强制证书验证: false,
-  代理节点DNS使用TCP: false,
 };
 
 const blockForeignQuic = [
@@ -340,11 +338,6 @@ function filterAndNormalizeProxies(config) {
   var resultProxies = [];
   for (var n = 0; n < normalizedProxies.length; n++) {
     var p = normalizedProxies[n];
-
-    // --- 强制 TLS 证书验证 ---
-    if (ruleOptionsEnable.强制证书验证) {
-      p['skip-cert-verify'] = false;
-    }
 
     var targetDialer = p['dialer-proxy'];
     if (!targetDialer) {
@@ -892,17 +885,6 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
   if (ruleOptionsEnable.FCM) fakeIpFilterList.push('rule-set:googlefcm');
   fakeIpFilterList = fakeIpFilterList.concat(proxyFakeIpFilter);
 
-  // --- 代理节点 DNS 转换 TCP ---
-  var processedProxyServerDNS = proxyServerDNS;
-  if (ruleOptionsEnable.代理节点DNS使用TCP) {
-    processedProxyServerDNS = proxyServerDNS.map(function(dns) {
-      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(dns)) {
-        return 'tcp://' + dns;
-      }
-      return dns;
-    });
-  }
-
   var dns = {
     enable: true,
     ipv6: true,
@@ -914,7 +896,7 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
     'fake-ip-range6': '2001:2::1/48',
     'fake-ip-filter': fakeIpFilterList,
     'default-nameserver': defaultDNS,
-    'proxy-server-nameserver': processedProxyServerDNS,
+    'proxy-server-nameserver': proxyServerDNS,
     nameserver: foreignDNS,
     'nameserver-policy': {
       'rule-set:private': 'system',

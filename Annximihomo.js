@@ -33,6 +33,8 @@ const ruleOptionsEnable = {
   屏蔽国外QUIC: true,
   代理IPV4优先: false,
   代理IPV6优先: false,
+  强制证书验证: false,
+  代理节点DNS使用TCP: false,
 };
 
 const blockForeignQuic = [
@@ -75,7 +77,7 @@ const regionDefinitions = [
   {
     name: '美国',
     flag: '🇺🇸',
-    regex: /🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|圣地亚哥|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states/i,
+    regex: /🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states/i,
     icon: iconBaseUrl + 'America.svg',
   },
 ];
@@ -153,7 +155,7 @@ const serviceConfigs = baseGroups.concat([
     },
     rules: ['RULE-SET,ai,AI'],
   },
-    {
+  {
     name: 'Twitter',
     icon: iconBaseUrl + 'Twitter.svg',
     providers: {
@@ -338,6 +340,12 @@ function filterAndNormalizeProxies(config) {
   var resultProxies = [];
   for (var n = 0; n < normalizedProxies.length; n++) {
     var p = normalizedProxies[n];
+
+    // --- 强制 TLS 证书验证 ---
+    if (ruleOptionsEnable.强制证书验证) {
+      p['skip-cert-verify'] = false;
+    }
+
     var targetDialer = p['dialer-proxy'];
     if (!targetDialer) {
       resultProxies.push(p);
@@ -355,6 +363,7 @@ function filterAndNormalizeProxies(config) {
     delete copy['dialer-proxy'];
     resultProxies.push(copy);
   }
+
   return resultProxies;
 }
 
@@ -602,7 +611,6 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
 }
 
 const commonDnsList = [
-  // ==================== 国内 ====================
   '223.5.5.5', '223.6.6.6', '2400:3200::1', '2400:3200:baba::1', 'alidns',
   '119.29.29.29', '182.254.116.116', '1.12.12.12', '120.53.53.53', '2402:4e00::',
   'doh.pub', 'dot.pub', 'dns.pub', 'dnspod',
@@ -612,8 +620,6 @@ const commonDnsList = [
   '101.226.4.6', '218.30.118.6', '123.125.81.6', '2400:8800:1::6', '2400:8800:2::6',
   'doh.360', 'dot.360',
   '180.184.1.1', '180.184.2.2',
-
-  // ==================== 国外 ====================
   '1.1.1.1', '1.0.0.1', '1.1.1.2', '1.0.0.2', '1.1.1.3', '1.0.0.3',
   '2606:4700:4700::1111', '2606:4700:4700::1001', '2606:4700:4700::1112', '2606:4700:4700::1002',
   '2606:4700:4700::1113', '2606:4700:4700::1003',
@@ -886,6 +892,17 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
   if (ruleOptionsEnable.FCM) fakeIpFilterList.push('rule-set:googlefcm');
   fakeIpFilterList = fakeIpFilterList.concat(proxyFakeIpFilter);
 
+  // --- 代理节点 DNS 转换 TCP ---
+  var processedProxyServerDNS = proxyServerDNS;
+  if (ruleOptionsEnable.代理节点DNS使用TCP) {
+    processedProxyServerDNS = proxyServerDNS.map(function(dns) {
+      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(dns)) {
+        return 'tcp://' + dns;
+      }
+      return dns;
+    });
+  }
+
   var dns = {
     enable: true,
     ipv6: true,
@@ -897,7 +914,7 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
     'fake-ip-range6': '2001:2::1/48',
     'fake-ip-filter': fakeIpFilterList,
     'default-nameserver': defaultDNS,
-    'proxy-server-nameserver': proxyServerDNS,
+    'proxy-server-nameserver': processedProxyServerDNS,
     nameserver: foreignDNS,
     'nameserver-policy': {
       'rule-set:private': 'system',
@@ -957,6 +974,7 @@ function main(config) {
     .concat(baseControlGroups);
 
   var rulesList = [
+    'DOMAIN-SUFFIX,ctaiot.com,直连',
     'DOMAIN,cdn.jsdmirror.com,直连',
     'RULE-SET,private,直连',
     'RULE-SET,geolocation-cn,直连'
@@ -979,7 +997,6 @@ function main(config) {
   newConfig.ipv6 = true;
   newConfig['unified-delay'] = true;
   newConfig['tcp-concurrent'] = true;
-  newConfig['client-fingerprint'] = 'chrome';
   newConfig['find-process-mode'] = 'off';
   newConfig['keep-alive-idle'] = 600;
   newConfig['keep-alive-interval'] = 60;

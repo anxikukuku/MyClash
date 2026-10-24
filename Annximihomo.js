@@ -80,7 +80,15 @@ const regionDefinitions = [
   },
 ];
 
-const groupCommonSelect = { type: 'select' };
+const groupCommonSelect = { 
+  type: 'select',
+  interval: 600,
+  timeout: 3000,
+  url: 'https://www.apple.com/library/test/success.html',
+  lazy: true,
+  'max-failed-times': 3,
+  'empty-fallback': 'REJECT',
+};
 
 const groupCommonAuto = {
   type: 'url-test',

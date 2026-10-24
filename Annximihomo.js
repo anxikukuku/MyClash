@@ -1008,6 +1008,18 @@ function main(config) {
     'strict-route': true,
     'dns-hijack': ['any:53', 'tcp://any:53'],
   };
+  newConfig.sniffer = {
+    enable: true,
+    'force-dns-mapping': true,
+    'parse-pure-ip': true,
+    'override-destination': true,
+    sniff: {
+      HTTP: { ports: [80, '8080-8880'] },
+      TLS: { ports: [443, 8443] },
+      QUIC: { ports: [443, 8443] },
+    },
+    'skip-dst-address': ['223.5.5.5/32', '119.29.29.29/32'],
+  };
   newConfig.proxies = mappedProxies.concat(directProxies);
   newConfig['proxy-groups'] = proxyGroupsList;
   newConfig.rules = rulesList;

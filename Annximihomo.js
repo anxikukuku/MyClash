@@ -888,6 +888,7 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
   var dns = {
     enable: true,
     ipv6: true,
+    'prefer-h3': true,
     'use-hosts': true,
     'cache-algorithm': 'arc',
     'use-system-hosts': true,

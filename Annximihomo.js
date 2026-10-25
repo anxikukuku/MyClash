@@ -636,10 +636,16 @@ const commonDnsList = [
 
 var commonDnsRegex = new RegExp(commonDnsList.map(function(dns) { return dns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'i');
 
-var chinaDNS = ['223.5.5.5#DIRECT', '119.29.29.29#DIRECT'];
-var foreignDNS = ['https://cloudflare-dns.com/dns-query#默认代理', 'https://dns.google/dns-query#默认代理'];
-var defaultDNS = ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://1.12.12.12/dns-query#DIRECT'];
-var proxyServerDNS = ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://doh.pub/dns-query#DIRECT'];
+var chinaDNS = ['tls://223.5.5.5#DIRECT', 'tls://119.29.29.29#DIRECT'];
+var foreignDNS = ['https://1.1.1.1/dns-query#默认代理', 'https://8.8.8.8/dns-query#默认代理'];
+var defaultDNS = ['tls://223.5.5.5#DIRECT',
+  'tls://119.29.29.29#DIRECT',
+  'https://1.12.12.12/dns-query#DIRECT', 'https://223.5.5.5/dns-query#DIRECT',
+  'https://120.53.53.53/dns-query#DIRECT'];
+var proxyServerDNS = ['tls://223.5.5.5#DIRECT',
+  'tls://119.29.29.29#DIRECT',
+  'https://1.12.12.12/dns-query#DIRECT', 'https://223.5.5.5/dns-query#DIRECT',
+  'https://120.53.53.53/dns-query#DIRECT'];
 
 function hostSpecificity(pattern) {
   if (pattern.startsWith('+.')) return 2;

@@ -967,8 +967,8 @@ function main(config) {
   }
   rulesList = rulesList.concat(functionalRules).concat([
     'RULE-SET,geolocation-!cn,默认代理',
-    'RULE-SET,cn_ip,直连,no-resolve',
-    'RULE-SET,private_ip,直连,no-resolve',
+    'RULE-SET,cn_ip,直连',
+    'RULE-SET,private_ip,直连',
     'MATCH,默认代理'
   ]);
 

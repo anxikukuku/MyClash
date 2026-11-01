@@ -151,7 +151,12 @@ const serviceConfigs = baseGroups.concat([
     providers: {
       ai: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/category-ai-!cn.mrs', path: './ruleset/ai.mrs', 'path-in-bundle': 'geo/geosite/category-ai-!cn.mrs' }),
     },
-    rules: ['RULE-SET,ai,AI', 'DOMAIN,cdn.usefathom.com,AI'],
+    rules: [
+      'RULE-SET,ai,AI',
+      'DOMAIN,cdn.usefathom.com,AI',
+      'DOMAIN-SUFFIX,intercom.io,AI',
+      'DOMAIN-SUFFIX,intercomcdn.com,AI'
+    ],
   },
   {
     name: 'Twitter',

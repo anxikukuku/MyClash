@@ -136,15 +136,6 @@ const serviceConfigs = baseGroups.concat([
     rules: ['RULE-SET,youtube,YouTube'],
   },
   {
-    name: 'Google',
-    icon: iconBaseUrl + 'Google.svg',
-    providers: {
-      google: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/google.mrs', path: './ruleset/google.mrs', 'path-in-bundle': 'geo/geosite/google.mrs' }),
-      google_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/google.mrs', path: './ruleset/google_ip.mrs', 'path-in-bundle': 'geo/geoip/google.mrs' }),
-    },
-    rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google,no-resolve'],
-  },
-  {
     name: 'AI',
     defaultSelected: '美国',
     icon: iconBaseUrl + 'OpenAI.svg',
@@ -157,6 +148,15 @@ const serviceConfigs = baseGroups.concat([
       'DOMAIN-SUFFIX,intercom.io,AI',
       'DOMAIN-SUFFIX,intercomcdn.com,AI'
     ],
+  },
+  {
+    name: 'Google',
+    icon: iconBaseUrl + 'Google.svg',
+    providers: {
+      google: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/google.mrs', path: './ruleset/google.mrs', 'path-in-bundle': 'geo/geosite/google.mrs' }),
+      google_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/google.mrs', path: './ruleset/google_ip.mrs', 'path-in-bundle': 'geo/geoip/google.mrs' }),
+    },
+    rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google,no-resolve'],
   },
   {
     name: 'Twitter',

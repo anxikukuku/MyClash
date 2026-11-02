@@ -156,7 +156,7 @@ const serviceConfigs = baseGroups.concat([
       google: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/google.mrs', path: './ruleset/google.mrs', 'path-in-bundle': 'geo/geosite/google.mrs' }),
       google_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/google.mrs', path: './ruleset/google_ip.mrs', 'path-in-bundle': 'geo/geoip/google.mrs' }),
     },
-    rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google,no-resolve'],
+    rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google'],
   },
   {
     name: 'Twitter',
@@ -165,7 +165,7 @@ const serviceConfigs = baseGroups.concat([
       twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
       twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
     },
-    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter,no-resolve'],
+    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter'],
   },
   {
     name: 'Telegram',
@@ -174,7 +174,7 @@ const serviceConfigs = baseGroups.concat([
       telegram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/telegram.mrs', path: './ruleset/telegram.mrs', 'path-in-bundle': 'geo/geosite/telegram.mrs' }),
       telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
     },
-    rules: ['RULE-SET,telegram,Telegram', 'RULE-SET,telegram_ip,Telegram,no-resolve'],
+    rules: ['RULE-SET,telegram,Telegram', 'RULE-SET,telegram_ip,Telegram'],
   },
   {
     name: 'Meta',
@@ -196,7 +196,7 @@ const serviceConfigs = baseGroups.concat([
       tiktok: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/tiktok.mrs', path: './ruleset/tiktok.mrs', 'path-in-bundle': 'geo/geosite/tiktok.mrs' }),
       tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok_ip.mrs' }),
     },
-    rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok,no-resolve'],
+    rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok'],
   },
   {
     name: 'Emby',

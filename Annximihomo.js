@@ -156,7 +156,8 @@ const serviceConfigs = baseGroups.concat([
       google: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/google.mrs', path: './ruleset/google.mrs', 'path-in-bundle': 'geo/geosite/google.mrs' }),
       google_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/google.mrs', path: './ruleset/google_ip.mrs', 'path-in-bundle': 'geo/geoip/google.mrs' }),
     },
-    rules: ['RULE-SET,google,Google', 'RULE-SET,google_ip,Google'],
+    rules: ['RULE-SET,google,Google'],
+    ipRules: ['RULE-SET,google_ip,Google'],
   },
   {
     name: 'Twitter',
@@ -165,7 +166,8 @@ const serviceConfigs = baseGroups.concat([
       twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
       twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
     },
-    rules: ['RULE-SET,twitter,Twitter', 'RULE-SET,twitter_ip,Twitter'],
+    rules: ['RULE-SET,twitter,Twitter'],
+    ipRules: ['RULE-SET,twitter_ip,Twitter'],
   },
   {
     name: 'Telegram',
@@ -174,7 +176,8 @@ const serviceConfigs = baseGroups.concat([
       telegram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/telegram.mrs', path: './ruleset/telegram.mrs', 'path-in-bundle': 'geo/geosite/telegram.mrs' }),
       telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
     },
-    rules: ['RULE-SET,telegram,Telegram', 'RULE-SET,telegram_ip,Telegram'],
+    rules: ['RULE-SET,telegram,Telegram'],
+    ipRules: ['RULE-SET,telegram_ip,Telegram'],
   },
   {
     name: 'Meta',
@@ -196,7 +199,8 @@ const serviceConfigs = baseGroups.concat([
       tiktok: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/tiktok.mrs', path: './ruleset/tiktok.mrs', 'path-in-bundle': 'geo/geosite/tiktok.mrs' }),
       tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok_ip.mrs' }),
     },
-    rules: ['RULE-SET,tiktok,TikTok', 'RULE-SET,tiktok_ip,TikTok'],
+    rules: ['RULE-SET,tiktok,TikTok'],
+    ipRules: ['RULE-SET,tiktok_ip,TikTok'],
   },
   {
     name: 'Emby',
@@ -466,6 +470,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
   ];
 
   var functionalRules = [];
+  var functionalIpRules = [];
   var finalRuleProviders = Object.assign({}, baseRuleProviders);
 
   if (!ruleOptionsEnable.屏蔽国外QUIC) delete finalRuleProviders.cn_additional;
@@ -498,6 +503,11 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     if (svc.rules) {
       for (var sr = 0; sr < svc.rules.length; sr++) {
         functionalRules.push(svc.rules[sr]);
+      }
+    }
+    if (svc.ipRules) {
+      for (var sip = 0; sip < svc.ipRules.length; sip++) {
+        functionalIpRules.push(svc.ipRules[sip]);
       }
     }
     if (svc.providers) {
@@ -604,6 +614,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     functionalGroups: functionalGroups,
     baseControlGroups: baseControlGroups,
     functionalRules: functionalRules,
+    functionalIpRules: functionalIpRules,
     finalRuleProviders: finalRuleProviders
   };
 }
@@ -980,6 +991,7 @@ function main(config) {
   var functionalGroups = functionalRes.functionalGroups;
   var baseControlGroups = functionalRes.baseControlGroups;
   var functionalRules = functionalRes.functionalRules;
+  var functionalIpRules = functionalRes.functionalIpRules;
   var finalRuleProviders = functionalRes.finalRuleProviders;
 
   var dnsHostsRes = buildDnsAndHostsConfig(config, proxies);
@@ -1002,7 +1014,8 @@ function main(config) {
     rulesList = rulesList.concat(blockForeignQuic);
   }
   rulesList = rulesList.concat(functionalRules).concat([
-    'RULE-SET,geolocation-!cn,默认代理',
+    'RULE-SET,geolocation-!cn,默认代理'
+  ]).concat(functionalIpRules).concat([
     'RULE-SET,cn_ip,直连',
     'RULE-SET,private_ip,直连',
     'MATCH,默认代理'

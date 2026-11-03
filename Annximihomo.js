@@ -26,6 +26,7 @@ const ruleOptionsEnable = {
   EHentai: true,
   Emby: true, 
   AdBlock: true,
+  极简模式: false, // 是否启用极简模式
   生成地区自动选择组: false,
   隐藏地区手动选择组: false,
   分流组添加所有节点: false,
@@ -80,7 +81,7 @@ const regionDefinitions = [
   },
 ];
 
-const groupCommonSelect = {type: 'select'};
+const groupCommonSelect = { type: 'select' };
 
 const groupCommonAuto = {
   type: 'url-test',
@@ -446,6 +447,63 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     allProxyNames.push(filteredProxies[i].name);
   }
 
+  // --- 极简模式逻辑处理 ---
+  if (ruleOptionsEnable.极简模式) {
+    var autoSelectEnabled = ruleOptionsEnable.自动选择;
+    var finalRuleProviders = Object.assign({}, baseRuleProviders);
+    if (!ruleOptionsEnable.屏蔽国外QUIC) delete finalRuleProviders.cn_additional;
+
+    var defaultGroupProxies = [].concat(allProxyNames);
+    if (autoSelectEnabled) defaultGroupProxies.push('自动选择');
+
+    var defaultGroup = Object.assign({}, groupCommonSelect, {
+      name: '默认代理',
+      proxies: defaultGroupProxies,
+      icon: iconBaseUrl + 'Proxy.svg'
+    });
+
+    var funcGroups = [defaultGroup];
+
+    if (autoSelectEnabled) {
+      var autoGroup = Object.assign({}, groupCommonAuto, {
+        name: '自动选择',
+        proxies: [].concat(allProxyNames),
+        hidden: true
+      });
+      funcGroups.push(autoGroup);
+    }
+
+    var directGroup = Object.assign({}, groupCommonSelect, {
+      name: '直连',
+      proxies: directProxies.map(function(p) { return p.name; }),
+      icon: iconBaseUrl + 'China.svg',
+      hidden: true
+    });
+    funcGroups.push(directGroup);
+
+    var globalProxies = ['默认代理'];
+    if (autoSelectEnabled) globalProxies.push('自动选择');
+    globalProxies.push('直连');
+
+    var globalGroup = {
+      name: 'GLOBAL',
+      type: 'select',
+      proxies: globalProxies,
+      icon: iconBaseUrl + 'Global.svg',
+      hidden: true
+    };
+
+    return {
+      globalGroup: globalGroup,
+      functionalGroups: funcGroups,
+      baseControlGroups: [],
+      functionalRules: [],
+      functionalIpRules: [],
+      finalRuleProviders: finalRuleProviders
+    };
+  }
+
+  // --- 常规完整模式逻辑 ---
   var baseGroupNames = [];
   for (var bg = 0; bg < baseGroups.length; bg++) {
     if (ruleOptionsEnable[baseGroups[bg].name]) {
@@ -622,57 +680,34 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
 // 完整的公共 DNS 白名单
 const commonDnsList = [
   // ==================== 国内 ====================
-  // 阿里 AliDNS
   '223.5.5.5', '223.6.6.6', '2400:3200::1', '2400:3200:baba::1', 'alidns',
-  // 腾讯 DNSPod
   '119.29.29.29', '119.28.28.28', '182.254.116.116', '182.254.118.118', '1.12.12.12', '120.53.53.53', '2402:4e00::', 'doh.pub', 'dot.pub', 'dns.pub', 'dnspod',
-  // 114DNS（含安全版、家庭版）
   '114.114.114.114', '114.114.115.115', '114.114.114.119', '114.114.115.119', '114.114.114.110', '114.114.115.110',
-  // 百度 BaiduDNS
   '180.76.76.76', '2400:da00::6666', 'dns.baidu',
-  // CNNIC SDNS
   '1.2.4.8', '210.2.4.8', '2001:dc7:1000::1', 'cnnic',
-  // 360 安全 DNS
   '101.226.4.6', '218.30.118.6', '123.125.81.6', '140.207.198.6', '2400:8800:1::6', '2400:8800:2::6', 'doh.360', 'dot.360', 'dns.360',
-  // 火山引擎（字节跳动）
   '180.184.1.1', '180.184.2.2',
-  // OneDNS（微步在线，拦截版/纯净版/家庭版）
   '117.50.11.11', '117.50.22.22', '52.80.66.66', '117.50.10.10', '52.80.52.52', '117.50.60.30', '52.80.60.30', 'onedns.net',
-  // 清华大学 TUNA
   '101.6.6.6', '2001:da8::666',
-  // 下一代互联网国家工程中心（IPv6 公共 DNS）
   '240c::6666', '240c::6644',
-  // 中国科学技术大学（教育网防污染）
   '202.141.162.123', '202.141.178.13',
 
   // ==================== 国外 ====================
-  // Cloudflare
   '1.1.1.1', '1.0.0.1', '1.1.1.2', '1.0.0.2', '1.1.1.3', '1.0.0.3',
   '2606:4700:4700::1111', '2606:4700:4700::1001', '2606:4700:4700::1112', '2606:4700:4700::1002', '2606:4700:4700::1113', '2606:4700:4700::1003',
   'dns.cloudflare', 'cloudflare-dns', 'one.one.one.one',
-  // Google Public DNS
   '8.8.8.8', '8.8.4.4', '2001:4860:4860::8888', '2001:4860:4860::8844', 'dns.google',
-  // Quad9
   '9.9.9.9', '9.9.9.10', '9.9.9.11', '149.112.112.112', '149.112.112.10', '149.112.112.11', '2620:fe::fe', '2620:fe::9', 'quad9',
-  // Cisco OpenDNS
   '208.67.222.222', '208.67.220.220', '208.67.222.123', '208.67.220.123',
   '2620:119:35::35', '2620:119:53::53', '2620:119:35::123', '2620:119:53::123', 'opendns',
-  // AdGuard DNS
   '94.140.14.14', '94.140.15.15', '94.140.14.15', '94.140.15.16',
   '2a10:50c0::ad1:ff', '2a10:50c0::ad2:ff', '2a10:50c0::bad1:ff', '2a10:50c0::bad2:ff', 'adguard',
-  // Control D
   '76.76.2.0', '76.76.10.0', '76.76.19.19', '76.223.122.150',
-  // CleanBrowsing
   '185.228.168.9', '185.228.169.9', '185.228.168.10', '185.228.169.11', '185.228.168.168', '185.228.169.168', '2a0d:2a00:1::2', '2a0d:2a00:2::2',
-  // Yandex DNS
   '77.88.8.8', '77.88.8.1', '2a02:6b8::feed:0ff', '2a02:6b8:0:1::feed:0ff',
-  // Neustar UltraDNS
   '156.154.70.1', '156.154.71.1', '156.154.70.2', '156.154.71.2', '2610:a1:1018::1', '2610:a1:1019::1',
-  // Mullvad DNS
   '194.242.2.2', '2a07:e340::2',
-  // Hurricane Electric
   '74.82.42.42', '2001:470:20::2',
-  // NextDNS / Apple
   'nextdns', 'dns.apple'
 ];
 
@@ -930,7 +965,9 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
     'rule-set:fakeip_filter',
     'rule-set:geolocation-cn'
   ];
-  if (ruleOptionsEnable.FCM) fakeIpFilterList.push('rule-set:googlefcm');
+  if (!ruleOptionsEnable.极简模式 && ruleOptionsEnable.FCM) {
+    fakeIpFilterList.push('rule-set:googlefcm');
+  }
   fakeIpFilterList = fakeIpFilterList.concat(proxyFakeIpFilter);
 
   var dns = {
@@ -985,7 +1022,7 @@ function main(config) {
     }
   }
 
-  var generatedRegionGroups = buildRegionGroups(proxies);
+  var generatedRegionGroups = ruleOptionsEnable.极简模式 ? [] : buildRegionGroups(proxies);
   var functionalRes = buildFunctionalGroups(proxies, generatedRegionGroups);
   var globalGroup = functionalRes.globalGroup;
   var functionalGroups = functionalRes.functionalGroups;

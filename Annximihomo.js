@@ -26,7 +26,7 @@ const ruleOptionsEnable = {
   EHentai: true,
   Emby: true, 
   AdBlock: true,
-  极简模式: false, // 是否启用极简模式
+  极简模式: false, 
   生成地区自动选择组: false,
   隐藏地区手动选择组: false,
   分流组添加所有节点: false,

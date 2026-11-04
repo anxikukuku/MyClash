@@ -37,7 +37,7 @@ const ruleOptionsEnable = {
 };
 
 const blockForeignQuic = [
-  'AND,((NETWORK,UDP),(DST-PORT,443),(RULE-SET,geolocation-!cn)),REJECT',
+  'AND,((NETWORK,UDP),(DST-PORT,443),(NOT,((OR,((RULE-SET,cn),(RULE-SET,cn_ip,no-resolve)))))),REJECT',
 ];
 
 const directProxies = [
@@ -106,7 +106,6 @@ const baseRuleProviders = {
   private_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/private.mrs', path: './ruleset/private_ip.mrs', 'path-in-bundle': 'geo/geoip/private_ip.mrs' }),
   'geolocation-cn': Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/geolocation-cn.mrs', path: './ruleset/geolocation-cn.mrs', 'path-in-bundle': 'geo/geosite/geolocation-cn.mrs' }),
   cn: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/cn.mrs', path: './ruleset/cn.mrs', 'path-in-bundle': 'geo/geosite/cn.mrs' }),
-  cn_additional: Object.assign({}, ruleProviderCommonDomain, { url: 'https://static-file-global.353355.xyz/rules/cn-additional-list.mrs', path: './ruleset/cn-additional-list.mrs', 'path-in-bundle': 'geo/geosite/cn.mrs' }),
   cn_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/cn.mrs', path: './ruleset/cn_ip.mrs', 'path-in-bundle': 'geo/geoip/cn_ip.mrs' }),
   'geolocation-!cn': Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/geolocation-!cn.mrs', path: './ruleset/geolocation-!cn.mrs', 'path-in-bundle': 'geo/geosite/geolocation-!cn.mrs' }),
   fakeip_filter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/fakeip-filter.mrs', path: './ruleset/fakeip-filter.mrs', 'path-in-bundle': 'geo/geosite/fakeip-filter.mrs' }),
@@ -166,7 +165,7 @@ const serviceConfigs = baseGroups.concat([
     icon: iconBaseUrl + 'Twitter.svg',
     providers: {
       twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
-      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter_ip.mrs' }),
+      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
     },
     rules: ['RULE-SET,twitter,Twitter'],
     ipRules: ['RULE-SET,twitter_ip,Twitter'],
@@ -176,7 +175,7 @@ const serviceConfigs = baseGroups.concat([
     icon: iconBaseUrl + 'Telegram.svg',
     providers: {
       telegram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/telegram.mrs', path: './ruleset/telegram.mrs', 'path-in-bundle': 'geo/geosite/telegram.mrs' }),
-      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram_ip.mrs' }),
+      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
     },
     rules: ['RULE-SET,telegram,Telegram'],
     ipRules: ['RULE-SET,telegram_ip,Telegram'],
@@ -199,7 +198,7 @@ const serviceConfigs = baseGroups.concat([
     icon: iconBaseUrl + 'TikTok.svg',
     providers: {
       tiktok: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/tiktok.mrs', path: './ruleset/tiktok.mrs', 'path-in-bundle': 'geo/geosite/tiktok.mrs' }),
-      tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok_ip.mrs' }),
+      tiktok_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/tiktok.mrs', path: './ruleset/tiktok_ip.mrs', 'path-in-bundle': 'geo/geoip/tiktok.mrs' }),
     },
     rules: ['RULE-SET,tiktok,TikTok'],
     ipRules: ['RULE-SET,tiktok_ip,TikTok'],

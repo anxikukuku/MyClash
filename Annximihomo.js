@@ -31,13 +31,14 @@ const ruleOptionsEnable = {
   隐藏地区手动选择组: false,
   分流组添加所有节点: false,
   过滤非地区节点: true,
-  屏蔽国外QUIC: true,
+  屏蔽国外QUIC: false, // 第3点：默认值改为 false
   代理IPV4优先: false,
   代理IPV6优先: false,
 };
 
+// 第2点：重构后的国外 QUIC 拦截规则
 const blockForeignQuic = [
-  'AND,((NETWORK,UDP),(DST-PORT,443),(NOT,((OR,((RULE-SET,cn_additional),(RULE-SET,cn_ip,no-resolve)))))),REJECT',
+  'AND,((NETWORK,UDP),(DST-PORT,443),(RULE-SET,geolocation-!cn)),REJECT',
 ];
 
 const directProxies = [
@@ -447,11 +448,10 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     allProxyNames.push(filteredProxies[i].name);
   }
 
-  // --- 极简模式逻辑处理 ---
+  // --- 第4点：规范清理后的极简模式逻辑 ---
   if (ruleOptionsEnable.极简模式) {
     var autoSelectEnabled = ruleOptionsEnable.自动选择;
     var finalRuleProviders = Object.assign({}, baseRuleProviders);
-    if (!ruleOptionsEnable.屏蔽国外QUIC) delete finalRuleProviders.cn_additional;
 
     var defaultGroupProxies = [].concat(allProxyNames);
     if (autoSelectEnabled) defaultGroupProxies.push('自动选择');
@@ -530,8 +530,6 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
   var functionalRules = [];
   var functionalIpRules = [];
   var finalRuleProviders = Object.assign({}, baseRuleProviders);
-
-  if (!ruleOptionsEnable.屏蔽国外QUIC) delete finalRuleProviders.cn_additional;
 
   var normalConfigs = [];
   var adblockConfig = null;

@@ -31,7 +31,7 @@ const ruleOptionsEnable = {
   隐藏地区手动选择组: false,
   分流组添加所有节点: false,
   过滤非地区节点: true,
-  屏蔽国外QUIC: false, // 第3点：默认值改为 false
+  屏蔽国外QUIC: false, 
   代理IPV4优先: false,
   代理IPV6优先: false,
 };

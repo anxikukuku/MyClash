@@ -110,6 +110,7 @@ const baseRuleProviders = {
   cn_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/cn.mrs', path: './ruleset/cn_ip.mrs', 'path-in-bundle': 'geo/geoip/cn_ip.mrs' }),
   'geolocation-!cn': Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/geolocation-!cn.mrs', path: './ruleset/geolocation-!cn.mrs', 'path-in-bundle': 'geo/geosite/geolocation-!cn.mrs' }),
   fakeip_filter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/fakeip-filter.mrs', path: './ruleset/fakeip-filter.mrs', 'path-in-bundle': 'geo/geosite/fakeip-filter.mrs' }),
+  douyin: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/douyin.mrs', path: './ruleset/douyin.mrs', 'path-in-bundle': 'geo/geosite/douyin.mrs' }),
 };
 
 const baseGroups = [
@@ -165,7 +166,7 @@ const serviceConfigs = baseGroups.concat([
     icon: iconBaseUrl + 'Twitter.svg',
     providers: {
       twitter: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/twitter.mrs', path: './ruleset/twitter.mrs', 'path-in-bundle': 'geo/geosite/twitter.mrs' }),
-      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter.mrs' }),
+      twitter_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/twitter.mrs', path: './ruleset/twitter_ip.mrs', 'path-in-bundle': 'geo/geoip/twitter_ip.mrs' }),
     },
     rules: ['RULE-SET,twitter,Twitter'],
     ipRules: ['RULE-SET,twitter_ip,Twitter'],
@@ -175,7 +176,7 @@ const serviceConfigs = baseGroups.concat([
     icon: iconBaseUrl + 'Telegram.svg',
     providers: {
       telegram: Object.assign({}, ruleProviderCommonDomain, { url: ruleSetBaseUrl + 'geosite/telegram.mrs', path: './ruleset/telegram.mrs', 'path-in-bundle': 'geo/geosite/telegram.mrs' }),
-      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram.mrs' }),
+      telegram_ip: Object.assign({}, ruleProviderCommonIpcidr, { url: ruleSetBaseUrl + 'geoip/telegram.mrs', path: './ruleset/telegram_ip.mrs', 'path-in-bundle': 'geo/geoip/telegram_ip.mrs' }),
     },
     rules: ['RULE-SET,telegram,Telegram'],
     ipRules: ['RULE-SET,telegram_ip,Telegram'],
@@ -501,7 +502,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     };
   }
 
-  // --- 常规完整模式逻辑 ---
+  // 常规完整模式逻辑
   var baseGroupNames = [];
   for (var bg = 0; bg < baseGroups.length; bg++) {
     if (ruleOptionsEnable[baseGroups[bg].name]) {
@@ -959,7 +960,7 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
   var fakeIpFilterList = [
     'rule-set:private',
     'rule-set:fakeip_filter',
-    'rule-set:geolocation-cn'
+    'rule-set:cn'
   ];
   if (!ruleOptionsEnable.极简模式 && ruleOptionsEnable.FCM) {
     fakeIpFilterList.push('rule-set:googlefcm');
@@ -981,6 +982,7 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
     nameserver: foreignDNS,
     'nameserver-policy': {
       'rule-set:private': 'system',
+      'rule-set:douyin': ['180.184.1.1', '180.184.2.2'],
       'rule-set:cn': chinaDNS,
     },
     'direct-nameserver': chinaDNS,

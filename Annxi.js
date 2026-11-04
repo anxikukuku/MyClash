@@ -1007,10 +1007,31 @@ const commonDnsRegex = new RegExp(
   'i',
 );
 
-const chinaDNS = ['223.5.5.5#DIRECT', '119.29.29.29#DIRECT'];
-const foreignDNS = ['https://cloudflare-dns.com/dns-query#默认代理', 'https://dns.google/dns-query#默认代理'];
-const defaultDNS = ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://1.12.12.12/dns-query#DIRECT'];
-const proxyServerDNS = ['114.114.114.114#DIRECT', 'tls://223.5.5.5#DIRECT', 'https://doh.pub/dns-query#DIRECT'];
+// 国内外 DNS 定义
+const chinaDNS = [
+  'https://dns.alidns.com/dns-query#DIRECT',
+  'https://doh.pub/dns-query#DIRECT',
+  'https://doh.360.cn/dns-query#DIRECT',
+];
+const foreignDNS = [
+  'https://cloudflare-dns.com/dns-query#默认代理',
+  'https://dns.google/dns-query#默认代理',
+  'https://unfiltered.adguard-dns.com/dns-query#默认代理',
+];
+const defaultDNS = [
+  'tls://223.5.5.5#DIRECT',
+  'tls://119.29.29.29#DIRECT',
+  'https://1.12.12.12/dns-query#DIRECT',
+  'https://223.5.5.5/dns-query#DIRECT',
+  'https://120.53.53.53/dns-query#DIRECT',
+];
+const proxyServerDNS = [
+  'tls://223.5.5.5#DIRECT',
+  'tls://119.29.29.29#DIRECT',
+  'https://1.12.12.12/dns-query#DIRECT',
+  'https://223.5.5.5/dns-query#DIRECT',
+  'https://120.53.53.53/dns-query#DIRECT',
+];
 
 function hostSpecificity(pattern) {
   if (pattern.startsWith('+.')) return 2;

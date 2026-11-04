@@ -36,7 +36,6 @@ const ruleOptionsEnable = {
   代理IPV6优先: false,
 };
 
-// 第2点：重构后的国外 QUIC 拦截规则
 const blockForeignQuic = [
   'AND,((NETWORK,UDP),(DST-PORT,443),(RULE-SET,geolocation-!cn)),REJECT',
 ];
@@ -448,7 +447,6 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     allProxyNames.push(filteredProxies[i].name);
   }
 
-  // --- 第4点：规范清理后的极简模式逻辑 ---
   if (ruleOptionsEnable.极简模式) {
     var autoSelectEnabled = ruleOptionsEnable.自动选择;
     var finalRuleProviders = Object.assign({}, baseRuleProviders);

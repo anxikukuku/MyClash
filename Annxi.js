@@ -21,11 +21,11 @@ const ruleOptionsEnable = {
   // 以下为分流策略配置
   FCM: true, // GoogleFCM服务
   YouTube: true, // YouTube视频平台
-  Google: true, // Google服务
   AI: true, // 国外AI服务
+  Google: true, // Google服务
   Telegram: true, // Telegram通讯软件
-  TikTok: true, // TikTok视频平台
   Twitter: true, // Twitter社交平台
+  TikTok: true, // TikTok视频平台
   Meta: true, // Meta服务
   Emby: true, // Emby媒体服务
   EHentai: true, // E-Hentai网站
@@ -112,17 +112,16 @@ const regionDefinitions = [
     icon: `${iconBaseUrl}HongKong.svg`,
   },
   {
+    name: '台湾',
+    flag: '🇹🇼',
+    regex: /🇹🇼|台湾|台北|高雄|(?<![A-Za-z])TWN?(?![A-Za-z])|taiwan/i,
+    icon: `${iconBaseUrl}Taiwan.svg`,
+  },
+  {
     name: '日本',
     flag: '🇯🇵',
     regex: /🇯🇵|日本|东京|大阪|京都|(?<![A-Za-z])JPN?(?![A-Za-z])|japan/i,
     icon: `${iconBaseUrl}Japan.svg`,
-  },
-  {
-    name: '美国',
-    flag: '🇺🇸',
-    regex:
-      /🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states/i,
-    icon: `${iconBaseUrl}America.svg`,
   },
   {
     name: '新加坡',
@@ -131,10 +130,11 @@ const regionDefinitions = [
     icon: `${iconBaseUrl}Singapore.svg`,
   },
   {
-    name: '台湾',
-    flag: '🇹🇼',
-    regex: /🇹🇼|台湾|台北|高雄|(?<![A-Za-z])TWN?(?![A-Za-z])|taiwan/i,
-    icon: `${iconBaseUrl}Taiwan.svg`,
+    name: '美国',
+    flag: '🇺🇸',
+    regex:
+      /🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states/i,
+    icon: `${iconBaseUrl}America.svg`,
   },
 ];
 
@@ -399,6 +399,27 @@ const serviceConfigs = [
     ipRules: ['RULE-SET,telegram_ip,Telegram'],
   },
   {
+    name: 'Twitter',
+    baseOption: selectBaseOption,
+    providers: {
+      twitter: {
+        ...ruleProviderCommonDomain,
+        url: `${ruleSetBaseUrl}geosite/twitter.mrs`,
+        path: './ruleset/twitter.mrs',
+        'path-in-bundle': 'geo/geosite/twitter.mrs',
+      },
+      twitter_ip: {
+        ...ruleProviderCommonIpcidr,
+        url: `${ruleSetBaseUrl}geoip/twitter.mrs`,
+        path: './ruleset/twitter_ip.mrs',
+        'path-in-bundle': 'geo/geoip/twitter.mrs',
+      },
+    },
+    icon: `${iconBaseUrl}Twitter.svg`,
+    rules: ['RULE-SET,twitter,Twitter'],
+    ipRules: ['RULE-SET,twitter_ip,Twitter'],
+  },
+  {
     name: 'TikTok',
     baseOption: selectBaseOption,
     defaultSelected: '日本',
@@ -419,27 +440,6 @@ const serviceConfigs = [
     icon: `${iconBaseUrl}TikTok.svg`,
     rules: ['RULE-SET,tiktok,TikTok'],
     ipRules: ['RULE-SET,tiktok_ip,TikTok'],
-  },
-  {
-    name: 'Twitter',
-    baseOption: selectBaseOption,
-    providers: {
-      twitter: {
-        ...ruleProviderCommonDomain,
-        url: `${ruleSetBaseUrl}geosite/twitter.mrs`,
-        path: './ruleset/twitter.mrs',
-        'path-in-bundle': 'geo/geosite/twitter.mrs',
-      },
-      twitter_ip: {
-        ...ruleProviderCommonIpcidr,
-        url: `${ruleSetBaseUrl}geoip/twitter.mrs`,
-        path: './ruleset/twitter_ip.mrs',
-        'path-in-bundle': 'geo/geoip/twitter.mrs',
-      },
-    },
-    icon: `${iconBaseUrl}Twitter.svg`,
-    rules: ['RULE-SET,twitter,Twitter'],
-    ipRules: ['RULE-SET,twitter_ip,Twitter'],
   },
   {
     name: 'Meta',

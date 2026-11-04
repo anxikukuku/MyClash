@@ -1303,6 +1303,15 @@ function buildDnsAndHostsConfig(config, filteredProxies) {
   return { dns, hosts, proxies: mappedProxies };
 }
 
+// --- 自定义策略组构建辅助函数 ---
+
+function buildCustomizeGroups(filteredProxies) {
+  const customProxies = customizeProxies || [];
+  const customProxyNames = customProxies.map((p) => p.name);
+  const customGroup = null;
+  return { customProxies, customProxyNames, customGroup };
+}
+
 // --- 主入口 ---
 
 function main(config) {
@@ -1389,7 +1398,7 @@ function main(config) {
     // 兜底规则
     'RULE-SET,cn_ip,直连',
     'RULE-SET,private_ip,直连',
-    `MATCH,${ruleOptionsEnable.极简模式 ? '默认代理'}`,
+    'MATCH,默认代理',
   ];
 
   return newConfig;

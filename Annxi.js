@@ -34,8 +34,6 @@ const ruleOptionsEnable = {
   // 以下为非分流策略配置
   极简模式: false, // 是否启用极简模式
   隐藏地区手动选择组: false, // 是否隐藏地区手动选择策略组
-  生成倍率组: true, // 是否生成低倍率/高倍率策略组
-  生成家宽节点组: true, // 是否生成家宽（住宅/原生 IP）节点策略组
   分流组添加所有节点: false, // 是否为分流策略组添加所有节点
   过滤低倍率节点: false, // 是否过滤低倍率节点
   过滤高倍率节点: false, // 是否过滤高倍率节点
@@ -137,39 +135,6 @@ const regionDefinitions = [
     icon: `${iconBaseUrl}America.svg`,
   },
 ];
-
-// 定义倍率策略组
-const lowRateRegionName = '低倍率节点';
-const highRateRegionName = '高倍率节点';
-
-const rateRegionDefinitions = [
-  {
-    name: lowRateRegionName,
-    regex:
-      /^(?!.*(?:剩|期)).*(?:(?<![\d.])0(\.[0-5]|[*×✕✖⨯⨉x倍]))|(?:[*×✕✖⨯⨉x]0)|^(?!.*(?:客户端|软件)).*下载|低倍|免费|(?<![A-Za-z])free(?![A-Za-z])/i,
-    icon: `${iconBaseUrl}Available.svg`,
-  },
-  {
-    name: highRateRegionName,
-    regex:
-      /(?:[*×✕✖⨯⨉x](?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?)|(?:(?<![\d.])(?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?(?:倍|[*×✕✖⨯⨉x]))/i,
-    icon: `${iconBaseUrl}Airport.svg`,
-  },
-];
-
-// 定义家宽（住宅/原生 IP）节点策略组
-const homeRegionName = '家宽节点';
-
-const homeRegionDefinitions = [
-  {
-    name: homeRegionName,
-    regex: /家宽|住宅|原生\s*IP|家庭宽带|\bISP\b|\bRES\b|residential/i,
-    icon: `${iconBaseUrl}Home.svg`,
-  },
-];
-
-// 全部策略组定义（地区 + 倍率 + 家宽），统一用于节点匹配与归类
-const allRegionDefinitions = [...regionDefinitions, ...rateRegionDefinitions, ...homeRegionDefinitions];
 
 // Rule Providers 通用配置
 const ruleProviderCommonDomain = {
@@ -550,7 +515,7 @@ function getMatchedRegions(proxyName) {
   }
 
   const matchableName = toMatchableName(proxyName);
-  const regions = allRegionDefinitions.filter((region) => region.regex.test(matchableName));
+  const regions = regionDefinitions.filter((region) => region.regex.test(matchableName));
   regionMatchCache.set(proxyName, regions);
 
   return regions;
@@ -611,10 +576,10 @@ function filterAndNormalizeProxies(config) {
   const filterNonRegionProxiesEnabled = ruleOptionsEnable.过滤非地区节点;
 
   const lowRateRegex = filterLowRateProxiesEnabled
-    ? rateRegionDefinitions.find((r) => r.name === lowRateRegionName)?.regex
+    ? /^(?!.*(?:剩|期)).*(?:(?<![\d.])0(\.[0-5]|[*×✕✖⨯⨉x倍]))|(?:[*×✕✖⨯⨉x]0)|^(?!.*(?:客户端|软件)).*下载|低倍|免费|(?<![A-Za-z])free(?![A-Za-z])/i
     : null;
   const highRateRegex = filterHighRateProxiesEnabled
-    ? rateRegionDefinitions.find((r) => r.name === highRateRegionName)?.regex
+    ? /(?:[*×✕✖⨯⨉x](?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?)|(?:(?<![\d.])(?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?(?:倍|[*×✕✖⨯⨉x]))/i
     : null;
 
   const originalProxies = config.proxies || [];
@@ -629,7 +594,7 @@ function filterAndNormalizeProxies(config) {
 
     if (!filterNonRegionProxiesEnabled) return true;
 
-    const isRegionProxy = getMatchedRegions(proxy.name).some((region) => regionDefinitions.includes(region));
+    const isRegionProxy = getMatchedRegions(proxy.name).length > 0;
 
     return isRegionProxy || !excludeFilter.test(matchableName);
   });
@@ -667,7 +632,7 @@ function filterAndNormalizeProxies(config) {
   return filteredProxies;
 }
 
-// ---构建地区组和倍率组---
+// ---构建地区组---
 
 function createRegionGroup(name, icon, proxies) {
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
@@ -684,15 +649,12 @@ function createRegionGroup(name, icon, proxies) {
 }
 
 function buildRegionGroups(filteredProxies, customProxies) {
-  const generateRateGroupEnabled = ruleOptionsEnable.生成倍率组;
-  const generateHomeGroupEnabled = ruleOptionsEnable.生成家宽节点组;
-
-  const regionGroups = Object.fromEntries(allRegionDefinitions.map(({ name }) => [name, []]));
+  const regionGroups = Object.fromEntries(regionDefinitions.map(({ name }) => [name, []]));
   const otherProxies = [];
 
   for (const proxy of [...filteredProxies, ...customProxies]) {
     const matchedRegions = getMatchedRegions(proxy.name);
-    const isRegionProxy = matchedRegions.some((region) => regionDefinitions.includes(region));
+    const isRegionProxy = matchedRegions.length > 0;
 
     for (const region of matchedRegions) {
       regionGroups[region.name].push(proxy.name);
@@ -703,13 +665,8 @@ function buildRegionGroups(filteredProxies, customProxies) {
     }
   }
 
-  const generatedRegionGroups = allRegionDefinitions
-    .filter(
-      (r) =>
-        regionGroups[r.name].length > 0 &&
-        (generateRateGroupEnabled || !rateRegionDefinitions.includes(r)) &&
-        (generateHomeGroupEnabled || !homeRegionDefinitions.includes(r)),
-    )
+  const generatedRegionGroups = regionDefinitions
+    .filter((r) => regionGroups[r.name].length > 0)
     .flatMap((r) => createRegionGroup(r.name, r.icon, regionGroups[r.name]));
 
   if (otherProxies.length > 0) {

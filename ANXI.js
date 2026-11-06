@@ -737,7 +737,11 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     const defaultGroup = {
       ...selectBaseOption,
       name: '默认代理',
-      proxies: [...groupNamesOfSelect, ...baseGroupNames, ...customGroupNames],
+      proxies: [
+        ...allProxiesNames,
+        ...(hasProviders ? proxyProviderNames : []),
+        ...(autoSelectGroupEnabled ? ['自动选择'] : []),
+      ],
       icon: `${iconBaseUrl}Proxy.svg`,
     };
 
@@ -746,7 +750,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       name: '自动选择',
       proxies: allProxiesNames,
       hidden: true,
-      ...useProvidersOpt,
+      ...(hasProviders ? useProvidersOpt : {}),
     };
 
     const directGroup = {

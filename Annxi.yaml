@@ -1,0 +1,522 @@
+# --- 锚点定义 (通用属性) ---
+proxy_providers_common:
+  &p {
+    type: http,
+    interval: 86400,
+    proxy: DIRECT,
+    exclude-type: 'DIRECT|REJECT|REMATCH',
+    health-check: { enable: true, url: https://www.apple.com/library/test/success.html, interval: 600, lazy: true },
+  }
+
+# 全局过滤节点
+global_exclude_filter:
+  &g {
+    exclude-filter: '(?i)(群|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|电报|频道|无法|说明|提示|访问|支持|教程|关注|更新|作者|加入|超时|收藏|优惠|福利|邀请|好友|失联|选择|剩余|公益|发布|DIZTNA|通路|登录|定时|渠道|牢记|永久|余额|阁下|本站|刷新|导航|建议|重置|以下|过滤|⚠️|@|t\.me\/\+|\bexpire\b|\bhttps?:\/\/|\.com|\btraffic\b)',
+  }
+
+#订阅提供者
+proxy-providers:
+  1:
+    <<:  [*p, *g]
+    url: ""
+    path: ./proxy_providers/1.yaml
+    override: { additional-prefix: "[1]" }
+
+#基础全局设置
+mixed-port: 7890
+allow-lan: false
+bind-address: '127.0.0.1'
+ipv6: true
+unified-delay: true
+tcp-concurrent: true
+find-process-mode: off
+keep-alive-idle: 600
+keep-alive-interval: 60
+external-controller: '127.0.0.1:9090'
+external-ui: ui
+external-ui-url: 'https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip'
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+#国内外DNS定义
+chinaDNS: &chinaDNS
+  - "https://dns.alidns.com/dns-query#DIRECT"
+  - "https://doh.pub/dns-query#DIRECT"
+  - "https://doh.360.cn/dns-query#DIRECT"
+foreignDNS: &foreignDNS
+  - "https://cloudflare-dns.com/dns-query#默认"
+  - "https://dns.google/dns-query#默认"
+  - "https://unfiltered.adguard-dns.com/dns-query#默认"
+defaultDNS: &defaultDNS
+  - "tls://223.5.5.5#DIRECT"
+  - "tls://119.29.29.29#DIRECT"
+  - "https://1.12.12.12/dns-query#DIRECT"
+  - "https://223.5.5.5/dns-query#DIRECT"
+  - "https://120.53.53.53/dns-query#DIRECT"
+proxyServerDNS: &proxyServerDNS
+  - "tls://223.5.5.5#DIRECT"
+  - "tls://119.29.29.29#DIRECT"
+  - "https://1.12.12.12/dns-query#DIRECT"
+  - "https://223.5.5.5/dns-query#DIRECT"
+  - "https://120.53.53.53/dns-query#DIRECT"
+
+   
+#DNS配置
+dns:
+  enable: true
+  ipv6: true
+  cache-algorithm: arc
+  enhanced-mode: fake-ip
+  use-hosts: true
+  use-system-hosts: false
+  Fake-ip-range: 198.18.0.1/15
+  fake-ip-range6: fc00::1/64
+  fake-ip-filter:
+    - 'rule-set:private'
+    - 'rule-set:fakeip_filter'
+    - 'rule-set:cn'
+    - 'rule-set:fcm'
+  default-nameserver: *defaultDNS
+  proxy-server-nameserver: *proxyServerDNS
+  nameserver: *foreignDNS
+  nameserver-policy:
+    'rule-set:private': 'system'
+    'rule-set:douyin': ['180.184.1.1', '180.184.2.2']
+    'rule-set:cn': *chinaDNS
+  direct-nameserver: *chinaDNS
+  direct-nameserver-follow-policy: true
+
+    
+hosts:
+  'doh.pub': ['1.12.12.12', '120.53.53.53']
+  'cloudflare-dns.com': ['1.1.1.1', '1.0.0.1']
+  'dns.google': ['8.8.8.8', '8.8.4.4']
+
+  # 解决谷歌商店无法下载的问题
+  'services.googleapis.cn': 'services.googleapis.com'
+  
+ntp:
+  enable: true
+  write-to-system: false
+  server: 'ntp.aliyun.com'
+  port: 123
+  interval: 60
+  
+#TUN模式设置
+tun:
+  enable: true
+  stack: mips
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+  strict-route: true
+  dns-hijack:
+    - 'any:53'
+    - 'tcp://any:53'
+    
+#直连
+proxies: 
+  - { name: '🇨🇳 直连 | 双栈', type: direct }
+  - { name: '🇨🇳 直连 | IPv4优先', type: direct, ip-version: ipv4-prefer }
+  - { name: '🇨🇳 直连 | IPv6优先', type: direct, ip-version: ipv6-prefer }
+  - { name: '🇨🇳 直连 | 仅IPv4', type: direct, ip-version: ipv4 }
+  - { name: '🇨🇳 直连 | 仅IPv6', type: direct, ip-version: ipv6 }
+  
+# 策略组通用配置
+group_common:
+  group_common_select:
+    &group_common_select {
+      type: select,
+    }
+
+proxies_reject: &proxies_reject { proxies: ['REJECT', 'REJECT-DROP', 'PASS'] }
+
+# 地区过滤器正则表达式定义
+group_filter:
+  HK_filter: &HK_filter { filter: '(?i)(🇭🇰|香港|(?<![A-Za-z])HKG?(?![A-Za-z])|hong\\s*kong)' }
+  JP_filter: &JP_filter { filter: '(?i)(🇯🇵|日本|东京|大阪|京都|(?<![A-Za-z])JPN?(?![A-Za-z])|japan)' }
+  TW_filter: &TW_filter { filter: '(?i)(🇹🇼|台湾|台北|高雄|(?<![A-Za-z])TWN?(?![A-Za-z])|taiwan)' }
+  SG_filter: &SG_filter { filter: '(?i)(🇸🇬|新加坡|狮城|(?<![A-Za-z])SGP?(?![A-Za-z])|singapore)' }
+  US_filter: &US_filter { filter: '(?i)(🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|圣地亚哥|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\\s*states)' }
+  Other_filter: &Other_filter { exclude-filter: '(?i)(🇭🇰|香港|(?<![A-Za-z])HKG?(?![A-Za-z])|hong\s*kong|🇯🇵|日本|东京|大阪|京都|(?<![A-Za-z])JPN?(?![A-Za-z])|japan|🇺🇸|美国|纽约|洛杉矶|旧金山|芝加哥|休斯顿|迈阿密|西雅图|波士顿|华盛顿|拉斯维加斯|圣何塞|圣地亚哥|(?<![A-Za-z])USA?(?![A-Za-z])|america|united\s*states|🇸🇬|新加坡|狮城|(?<![A-Za-z])SGP?(?![A-Za-z])|singapore|🇹🇼|台湾|台北|高雄|(?<![A-Za-z])TWN?(?![A-Za-z])|taiwan)' }
+
+# 通用代理节点组
+proxies_common:
+  proxies_default:
+    &proxies_default {
+      proxies:
+        [
+          '𝙋𝙍𝙓',
+          '𝙃𝙆𝙂',
+          '𝙏𝙒𝙉',
+          '𝙅𝙋𝙉',
+          '𝙎𝙂𝙋',
+          '𝙐𝙎𝘼',
+          '𝙊𝙏𝙃',
+          '𝙎𝙀𝙇',
+        ],
+    }
+
+  proxies_direct:
+    &proxies_direct {
+      proxies:
+        [
+          '𝙋𝙍𝙓',
+          '𝙃𝙆𝙂',
+          '𝙏𝙒𝙉',
+          '𝙅𝙋𝙉',
+          '𝙎𝙂𝙋',
+          '𝙐𝙎𝘼',
+          '𝙊𝙏𝙃',
+          '𝙎𝙀𝙇',
+          '𝘾𝙃𝙉',
+        ],
+    }
+
+  proxies_reject: &proxies_reject { proxies: ['REJECT', 'REJECT-DROP', 'PASS'] }
+
+# 定义分流策略组
+proxy-groups:
+  - name: '𝙋𝙍𝙓'
+    <<: *group_common_select
+    proxies:
+      [
+        '𝙃𝙆𝙂',
+        '𝙏𝙒𝙉',
+        '𝙅𝙋𝙉',
+        '𝙎𝙂𝙋',
+        '𝙐𝙎𝘼',
+        '𝙊𝙏𝙃',
+        '𝙎𝙀𝙇',
+      ]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Proxy.svg'
+
+  - name: '𝙂𝙂𝙇'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Google.svg'
+
+  - name: '𝘼𝙄𝙉'
+    default-selected: '𝙐𝙎𝘼'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/OpenAI.svg'
+
+  - name: '𝙏𝙒𝙏'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Twitter.svg'
+
+  - name: '𝙏𝙂𝙉'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Telegram.svg'
+
+  - name: '𝙈𝙀𝙏'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Meta.svg'
+
+  - name: '𝙔𝙏𝘽'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/YouTube.svg'
+
+  - name: '𝙏𝙏𝙆'
+    default-selected: '𝙅𝙋𝙉'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/TikTok.svg'
+
+  - name: '𝙀𝙈𝘽'
+    <<: [*group_common_select, *proxies_direct]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Emby.svg'
+
+  - name: '𝙀𝙃𝙏'
+    default-selected: '𝙐𝙎𝘼'
+    <<: [*group_common_select, *proxies_default]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/EHentai.svg'
+
+  - name: '𝙁𝘾𝙈'
+    <<: *group_common_select
+    proxies: ['𝘾𝙃𝙉']
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Fcm.svg'
+
+  - name: '𝘼𝘽𝙇'
+    <<: [*group_common_select, *proxies_reject]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/AdBlock.svg'
+
+  - name: '𝘾𝙃𝙉'
+    <<: *group_common_select
+    proxies:
+      [
+        '🇨🇳 直连 | 双栈',
+        '🇨🇳 直连 | IPv4优先',
+        '🇨🇳 直连 | IPv6优先',
+        '🇨🇳 直连 | 仅IPv4',
+        '🇨🇳 直连 | 仅IPv6',
+      ]
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/China.svg'
+
+  # 定义地区策略组
+  - name: '𝙃𝙆𝙂'
+    <<: [*group_common_select, *HK_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/HongKong.svg'
+
+  - name: '𝙏𝙒𝙉'
+    <<: [*group_common_select, *TW_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Taiwan.svg'
+    
+  - name: '𝙅𝙋𝙉'
+    <<: [*group_common_select, *JP_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Japan.svg'
+
+  - name: '𝙎𝙂𝙋'
+    <<: [*group_common_select, *SG_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Singapore.svg'
+    
+  - name: '𝙐𝙎𝘼'
+    <<: [*group_common_select, *US_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/America.svg'
+
+  - name: '𝙊𝙏𝙃'
+    <<: [*group_common_select, *Other_filter]
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/WorldMap.svg'
+
+  - name: '𝙎𝙀𝙇'
+    <<: *group_common_select
+    include-all: true
+    exclude-type: 'DIRECT'
+    icon: 'https://cdn.jsdmirror.com/gh/AIsouler/MyClash@main/Icons/svg/Static.svg'
+
+#分流规则
+rules:
+  # 规则集下载域名，避免出现鸡蛋问题
+  - DOMAIN,cdn.jsdmirror.com,𝘾𝙃𝙉
+  #基础局域网与系统服务
+  - RULE-SET,private,DIRECT
+  # 国内域名直连
+  - RULE-SET,geolocation-cn,𝘾𝙃𝙉
+  - DOMAIN-SUFFIX,ctaiot.com,𝘾𝙃𝙉
+  # 去广告
+  - RULE-SET,category-ads,𝘼𝘽𝙇
+  # FCM推送
+  - RULE-SET,fcm,𝙁𝘾𝙈
+  # 油管
+  - RULE-SET,youtube,𝙔𝙏𝘽
+  # AI
+  - RULE-SET,ai,𝘼𝙄𝙉
+  - DOMAIN,cdn.usefathom.com,𝘼𝙄𝙉
+  - DOMAIN-SUFFIX,intercom.io,𝘼𝙄𝙉
+  - DOMAIN-SUFFIX,intercomcdn.com,𝘼𝙄𝙉
+  # Google
+  - RULE-SET,google,𝙂𝙂𝙇
+  # 视频服务
+  - RULE-SET,tiktok,𝙏𝙏𝙆
+  # 社交媒体
+  - RULE-SET,telegram,𝙏𝙂𝙉
+  - RULE-SET,twitter,𝙏𝙒𝙏
+  - RULE-SET,instagram,𝙈𝙀𝙏
+  - RULE-SET,meta,𝙈𝙀𝙏
+  # emby
+  - RULE-SET,emby,𝙀𝙈𝘽
+  - RULE-SET,emos,𝙀𝙈𝘽
+  - DOMAIN-SUFFIX,mb3admin.com,𝙀𝙈𝘽
+  - DOMAIN-SUFFIX,nubebelle.com,𝙀𝙈𝘽
+  - DOMAIN-KEYWORD,emby,𝙀𝙈𝘽
+  - PROCESS-NAME,com.mb.android,𝙀𝙈𝘽
+  - PROCESS-NAME,tv.emby.embyatv,𝙀𝙈𝘽
+  - PROCESS-NAME,com.hush.yamby,𝙀𝙈𝘽
+  - PROCESS-NAME,com.jellycine.app,𝙀𝙈𝘽
+  - PROCESS-NAME,com.mountains.hills,𝙀𝙈𝘽
+  - PROCESS-NAME,RodelPlayer.App.exe,𝙀𝙈𝘽
+  - PROCESS-NAME,com.feifeiduck.capyplayer,𝙀𝙈𝘽
+  # Ehentai
+  - RULE-SET,ehentai,𝙀𝙃𝙏
+  # 国外域名兜底（漏网之鱼）
+  - RULE-SET,geolocation-!cn,𝙋𝙍𝙓
+  # 国外IP地址分流
+  - RULE-SET,google_ip,𝙂𝙂𝙇
+  - RULE-SET,tiktok_ip,𝙏𝙏𝙆
+  - RULE-SET,telegram_ip,𝙏𝙂𝙉
+  - RULE-SET,twitter_ip,𝙏𝙒𝙏
+  # 国内IP地址分流
+  - RULE-SET,cn_ip,𝘾𝙃𝙉
+  - RULE-SET,private_ip,𝘾𝙃𝙉
+  # 最终真·兜底
+  - MATCH,𝙋𝙍𝙓
+
+#规则集定义
+rule-anchor:
+  ip: &ip
+    type: http
+    interval: 86400
+    behavior: ipcidr
+    format: mrs
+  domain: &domain
+    type: http
+    interval: 86400
+    behavior: domain
+    format: mrs
+    
+#规则集
+rule-providers:
+  #广告拦截
+  category-ads:
+    <<: *domain
+    url: "'https://cdn.jsdmirror.com/gh/appshubcc/bett-rules@meta/geo/geosite/category-ads.mrs"
+    path: './ruleset/category-ads.mrs'
+    path-in-bundle: 'geo/geosite/category-ads.mrs'
+  
+# AI
+  ai:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/category-ai-!cn.mrs"
+    path: './ruleset/ai.mrs'
+    path-in-bundle: 'geo/geosite/category-ai-!cn.mrs'
+
+# 社交媒体
+  telegram:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/telegram.mrs"
+    path: './ruleset/telegram.mrs'
+    path-in-bundle: 'geo/geosite/telegram.mrs'
+  telegram_ip:
+    <<: *ip
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/telegram.mrs"
+    path: './ruleset/telegram.mrs'
+    path-in-bundle: 'geo/geoip/telegram.mrs'
+  twitter:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/twitter.mrs"
+    path: './ruleset/twitter.mrs'
+    path-in-bundle: 'geo/geosite/twitter.mrs'
+  twitter_ip:
+    <<: *ip
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/twitter.mrs"
+    path: './ruleset/twitter.mrs'
+    path-in-bundle: 'geo/geoip/twitter.mrs'
+  instagram:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/instagram.mrs"
+    path: './ruleset/instagram.mrs'
+    path-in-bundle: 'geo/geosite/instagram.mrs'
+  meta:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/meta.mrs"
+    path: './ruleset/meta.mrs'
+    path-in-bundle: 'geo/geosite/meta.mrs'
+    
+# emby
+  emby:
+    <<: *domain
+    url: 'https://cdn.jsdmirror.com/gh/666OS/rules@release/mihomo/domain/Emby.mrs'
+    path: './ruleset/emby.mrs'
+    path-in-bundle: 'geo/geosite/category-emby.mrs'
+  emos:
+    <<: *domain
+    url: 'https://cdn.jsdmirror.com/gh/binaryu/emos-proxy-rule@main/rules/emos-mihomo.mrs'
+    path: './ruleset/emos.mrs'
+    path-in-bundle: 'geo/geosite/category-emby.mrs'
+
+# 视频流媒
+  tiktok:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/tiktok.mrs"
+    path: './ruleset/tiktok.mrs'
+    path-in-bundle: 'geo/geosite/tiktok.mrs'
+  tiktok_ip:
+    <<: *ip
+    url: 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/tiktok.mrs'
+    path: './ruleset/tiktok.mrs'
+    path-in-bundle: 'geo/geoip/tiktok.mrs'
+  youtube:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/youtube.mrs"
+    path: './ruleset/youtube.mrs'
+    path-in-bundle: 'geo/geosite/youtube.mrs'
+
+# e站
+  ehentai:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/ehentai.mrs"
+    path: './ruleset/ehentai.mrs'
+    path-in-bundle: 'geo/geosite/ehentai.mrs'
+
+# Google
+  fcm:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/googlefcm.mrs"
+    path: './ruleset/googlefcm.mrs'
+    path-in-bundle: 'geo/geosite/googlefcm.mrs'
+  google:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/google.mrs"
+    path: './ruleset/google.mrs'
+    path-in-bundle: 'geo/geosite/google.mrs'
+  google_ip:
+    <<: *ip
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/google.mrs"
+    path: './ruleset/google.mrs'
+    path-in-bundle: 'geo/geoip/google.mrs'
+
+# 直连 & 国内
+  geolocation-cn:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/geolocation-cn.mrs"
+    path: './ruleset/geolocation-cn.mrs'
+    path-in-bundle: 'geo/geosite/geolocation-cn.mrs'
+  cn:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/cn.mrs"
+    path: './ruleset/cn.mrs'
+    path-in-bundle: 'geo/geosite/cn.mrs'
+  cn_additional:
+    <<: *domain
+    url: 'https://static-file-global.353355.xyz/rules/cn-additional-list.mrs'
+    path: './ruleset/cn-additional-list.mrs'
+    path-in-bundle: 'geo/geosite/cn.mrs'
+  cn_ip:
+    <<: *ip
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/cn.mrs"
+    path: './ruleset/cn.mrs'
+    path-in-bundle: 'geo/geoip/cn.mrs'
+  douyin:
+    <<: *domain
+    url: 'https://cdn.jsdmirror.com/gh/appshubcc/bett-rules@meta/geo/geosite/douyin.mrs'
+    path: './ruleset/douyin.mrs'
+    path-in-bundle: 'geo/geosite/douyin.mrs'
+
+
+# 局域网与私有网络
+  private:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/private.mrs"
+    path: './ruleset/private.mrs'
+    path-in-bundle: 'geo/geosite/private.mrs'
+  private_ip:
+    <<: *ip
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geoip/private.mrs"
+    path: './ruleset/private.mrs'
+    path-in-bundle: 'geo/geoip/private.mrs'
+
+# 系统服务
+  fakeip_filter:
+    <<: *domain
+    url: 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/fakeip-filter.mrs'
+    path: './ruleset/fakeip-filter.mrs'
+    path-in-bundle: 'geo/geosite/fakeip-filter.mrs'
+
+# 漏网之鱼
+  geolocation-!cn:
+    <<: *domain
+    url: "https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/geosite/geolocation-!cn.mrs"
+    path: './ruleset/geolocation-!cn.mrs'
+    path-in-bundle: 'geo/geosite/geolocation-!cn.mrs'

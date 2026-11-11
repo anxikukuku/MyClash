@@ -16,6 +16,7 @@ const ruleOptionsEnable = {
   // 基础策略组
   手动选择: true, // 是否启用手动选择策略组
   自动选择: true, // 是否启用自动选择策略组
+  自动回退: true, // 是否启用自动回退策略组
   负载均衡: true, // 是否启用负载均衡策略组
 
   // 以下为分流策略配置
@@ -234,6 +235,15 @@ const urlTestBaseOption = {
   hidden: true,
 };
 
+// fallback策略组通用配置
+const fallbackBaseOption = {
+  ...groupBaseOption,
+  type: 'fallback',
+  'exclude-type': 'DIRECT',
+  icon: `${iconBaseUrl}Auto.svg`,
+  hidden: true,
+};
+
 // load-balance策略组通用配置
 const loadBalanceBaseOption = {
   ...groupBaseOption,
@@ -255,6 +265,12 @@ const baseGroups = [
   {
     name: '自动选择',
     baseOption: urlTestBaseOption,
+    includeAll: true,
+    icon: `${iconBaseUrl}Auto.svg`,
+  },
+  {
+    name: '自动回退',
+    baseOption: fallbackBaseOption,
     includeAll: true,
     icon: `${iconBaseUrl}Auto.svg`,
   },
@@ -302,7 +318,7 @@ const serviceConfigs = [
   {
     name: 'AI',
     baseOption: selectBaseOption,
-    defaultSelected: '美国',
+    defaultSelected: '🇺🇸 美国',
     providers: {
       ai: {
         ...ruleProviderCommonDomain,
@@ -385,7 +401,7 @@ const serviceConfigs = [
   {
     name: 'TikTok',
     baseOption: selectBaseOption,
-    defaultSelected: '日本',
+    defaultSelected: '🇯🇵 日本',
     providers: {
       tiktok: {
         ...ruleProviderCommonDomain,
@@ -449,7 +465,7 @@ const serviceConfigs = [
     name: 'EHentai',
     baseOption: selectBaseOption,
     direct: true,
-    defaultSelected: '美国',
+    defaultSelected: '🇺🇸 美国',
     providers: {
       ehentai: {
         ...ruleProviderCommonDomain,
@@ -640,20 +656,68 @@ function filterAndNormalizeProxies(config) {
 // --- 构建地区策略组 ---
 
 /**
- * 构建地区策略组
+ * 构建地区策略组及其嵌套的子策略组（自动选择、自动回退、负载均衡）
  */
-function createRegionGroup(name, icon, proxies) {
+function createRegionGroup(displayName, icon, proxies) {
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
+  const autoSelectEnabled = ruleOptionsEnable.自动选择;
+  const fallbackEnabled = ruleOptionsEnable.自动回退;
+  const loadBalanceEnabled = ruleOptionsEnable.负载均衡;
 
-  return [
-    {
-      ...selectBaseOption,
-      name,
+  const subGroupNames = [];
+  const subGroups = [];
+
+  // 1. 嵌套「自动选择」
+  if (autoSelectEnabled) {
+    const autoGroupName = `${displayName} · 自动选择`;
+    subGroupNames.push(autoGroupName);
+    subGroups.push({
+      ...urlTestBaseOption,
+      name: autoGroupName,
       icon,
       proxies,
-      hidden: hideManualSelectGroupEnabled,
-    },
+    });
+  }
+
+  // 2. 嵌套「自动回退」
+  if (fallbackEnabled) {
+    const fallbackGroupName = `${displayName} · 自动回退`;
+    subGroupNames.push(fallbackGroupName);
+    subGroups.push({
+      ...fallbackBaseOption,
+      name: fallbackGroupName,
+      icon: fallbackBaseOption.icon,
+      proxies,
+    });
+  }
+
+  // 3. 嵌套「负载均衡」
+  if (loadBalanceEnabled) {
+    const loadBalanceGroupName = `${displayName} · 负载均衡`;
+    subGroupNames.push(loadBalanceGroupName);
+    subGroups.push({
+      ...loadBalanceBaseOption,
+      name: loadBalanceGroupName,
+      icon: loadBalanceBaseOption.icon,
+      proxies,
+    });
+  }
+
+  // 组合地区父策略组（Select）的节点列表
+  const parentProxies = [
+    ...subGroupNames,
+    ...proxies,
   ];
+
+  const parentGroup = {
+    ...selectBaseOption,
+    name: displayName,
+    icon,
+    proxies: parentProxies,
+    hidden: hideManualSelectGroupEnabled,
+  };
+
+  return [parentGroup, ...subGroups];
 }
 
 /**
@@ -678,10 +742,15 @@ function buildRegionGroups(filteredProxies, customProxies) {
 
   const generatedRegionGroups = regionDefinitions
     .filter((r) => regionGroups[r.name].length > 0)
-    .flatMap((r) => createRegionGroup(r.name, r.icon, regionGroups[r.name]));
+    .flatMap((r) => {
+      const displayName = r.flag ? `${r.flag} ${r.name}` : r.name;
+      return createRegionGroup(displayName, r.icon, regionGroups[r.name]);
+    });
 
   if (otherProxies.length > 0) {
-    generatedRegionGroups.push(...createRegionGroup('其他节点', `${iconBaseUrl}WorldMap.svg`, otherProxies));
+    generatedRegionGroups.push(
+      ...createRegionGroup('其他节点', `${iconBaseUrl}WorldMap.svg`, otherProxies),
+    );
   }
 
   return generatedRegionGroups;
@@ -717,25 +786,39 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   const { customProxyNames = [], customGroup = null } = customizeInfo || {};
   const filteredProxyNames = filteredProxies.map((p) => p.name);
   const allProxiesNames = [...filteredProxyNames, ...customProxyNames];
+
+  // 提取所有类型为 select 的地区主策略组名称
   const groupNamesOfSelect = generatedRegionGroups.filter((g) => g.type === 'select').map((g) => g.name);
   const baseGroupNames = baseGroups.filter((g) => ruleOptionsEnable[g.name]).map((g) => g.name);
   const customGroupNames = customGroup ? [customGroup.name] : [];
 
   if (minimalModeEnabled) {
     const autoSelectGroupEnabled = ruleOptionsEnable.自动选择;
+    const fallbackGroupEnabled = ruleOptionsEnable.自动回退;
 
     const finalRuleProviders = { ...baseRuleProviders };
 
     const defaultGroup = {
       ...selectBaseOption,
       name: '默认代理',
-      proxies: [...allProxiesNames, ...(autoSelectGroupEnabled ? ['自动选择'] : [])],
+      proxies: [
+        ...allProxiesNames,
+        ...(autoSelectGroupEnabled ? ['自动选择'] : []),
+        ...(fallbackGroupEnabled ? ['自动回退'] : []),
+      ],
       icon: `${iconBaseUrl}Proxy.svg`,
     };
 
     const autoSelectGroup = {
       ...urlTestBaseOption,
       name: '自动选择',
+      proxies: allProxiesNames,
+      hidden: true,
+    };
+
+    const fallbackGroup = {
+      ...fallbackBaseOption,
+      name: '自动回退',
       proxies: allProxiesNames,
       hidden: true,
     };
@@ -755,6 +838,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
         '默认代理',
         ...customGroupNames,
         ...(autoSelectGroupEnabled ? [autoSelectGroup.name] : []),
+        ...(fallbackGroupEnabled ? [fallbackGroup.name] : []),
         '直连',
       ],
       icon: `${iconBaseUrl}Global.svg`,
@@ -762,7 +846,11 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
 
     return {
       globalGroup,
-      functionalGroups: [defaultGroup, ...(autoSelectGroupEnabled ? [autoSelectGroup] : [])],
+      functionalGroups: [
+        defaultGroup,
+        ...(autoSelectGroupEnabled ? [autoSelectGroup] : []),
+        ...(fallbackGroupEnabled ? [fallbackGroup] : []),
+      ],
       functionalRules: [],
       functionalIpRules: [],
       finalRuleProviders,
@@ -770,10 +858,15 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     };
   }
 
+  // 默认代理与应用分流策略组引用的基础策略组（不包含「自动回退」和「负载均衡」）
+  const baseGroupNamesForServices = baseGroupNames.filter(
+    (name) => name !== '自动回退' && name !== '负载均衡',
+  );
+
   functionalGroups.push({
     ...selectBaseOption,
     name: '默认代理',
-    proxies: [...groupNamesOfSelect, ...baseGroupNames, ...customGroupNames],
+    proxies: [...groupNamesOfSelect, ...baseGroupNamesForServices, ...customGroupNames],
     icon: `${iconBaseUrl}Proxy.svg`,
   });
 
@@ -794,16 +887,25 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
 
     let groupProxies = [];
     if (svc.includeAll) {
-      groupProxies = [...allProxiesNames];
+      if (svc.name === '手动选择') {
+        const subGroupsForManual = [];
+        if (ruleOptionsEnable.自动选择) subGroupsForManual.push('自动选择');
+        if (ruleOptionsEnable.自动回退) subGroupsForManual.push('自动回退');
+        if (ruleOptionsEnable.负载均衡) subGroupsForManual.push('负载均衡');
+        groupProxies = [...subGroupsForManual, ...allProxiesNames];
+      } else {
+        groupProxies = [...allProxiesNames];
+      }
     } else if (svc.reject) {
       groupProxies = ['REJECT', 'REJECT-DROP', 'PASS'];
     } else {
+      // 应用/分流策略组：使用 baseGroupNamesForServices（不包含自动回退和负载均衡）
       groupProxies = !addAllNodesToServiceGroupsEnabled
-        ? ['默认代理', ...customGroupNames, ...baseGroupNames, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
+        ? ['默认代理', ...customGroupNames, ...baseGroupNamesForServices, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
         : [
             '默认代理',
             ...customGroupNames,
-            ...baseGroupNames,
+            ...baseGroupNamesForServices,
             ...groupNamesOfSelect,
             ...allProxiesNames,
             ...(svc.direct ? ['直连'] : []),
@@ -837,7 +939,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       ...functionalGroups.map((g) => g.name),
       ...customGroupNames,
       directGroup.name,
-      ...generatedRegionGroups.map((g) => g.name),
+      ...groupNamesOfSelect,
     ],
     icon: `${iconBaseUrl}Global.svg`,
   };
@@ -900,7 +1002,6 @@ const commonDnsList = [
   // 360 安全 DNS
   '101.226.4.6',
   '218.30.118.6',
-  '123.125.81.6',
   '140.207.198.6',
   '2400:8800:1::6',
   '2400:8800:2::6',

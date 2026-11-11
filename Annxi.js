@@ -100,7 +100,7 @@ const iconBaseUrl = 'https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
 
-// 定义地区策略组（已兼容国旗在后或无国旗格式）
+// 定义地区策略组
 const regionDefinitions = [
   {
     name: '香港',
@@ -532,7 +532,7 @@ function getMatchedRegions(proxyName) {
 }
 
 /**
- * 标准化节点名称：补全地区国旗、折叠多余空格，并预缓存匹配结果
+ * 标准化节点名称：补全地区国旗、折叠多余空格，并防止与地区策略组同名
  */
 const flagRegex = /[\u{1F1E6}-\u{1F1FF}]{2}/u;
 function normalizeProxyName(proxy) {
@@ -546,7 +546,16 @@ function normalizeProxyName(proxy) {
 
   const regionFlag = flag || matchedRegions.find((region) => region.flag)?.flag;
 
-  const normalizedName = regionFlag ? `${regionFlag} ${nameWithoutFlag}` : nameWithoutFlag;
+  let normalizedName = regionFlag ? `${regionFlag} ${nameWithoutFlag}` : nameWithoutFlag;
+
+  // 关键修复：防止节点名称与地区策略组名称（如 "🇭🇰 香港"）同名，触发 Clash 内核循环嵌套引用报错
+  for (const region of regionDefinitions) {
+    const regionGroupName = region.flag ? `${region.flag} ${region.name}` : region.name;
+    if (normalizedName === regionGroupName || normalizedName === region.name) {
+      normalizedName = `${normalizedName} 01`;
+      break;
+    }
+  }
 
   if (normalizedName !== originalName) {
     regionMatchCache.set(normalizedName, matchedRegions);
@@ -668,7 +677,7 @@ function createRegionGroup(displayName, icon, proxies) {
   const subGroupNames = [];
   const subGroups = [];
 
-  // 1. 嵌套「自动选择」：强制显式指定 Auto.svg
+  // 1. 嵌套「自动选择」
   if (autoSelectEnabled) {
     const autoGroupName = `${displayName} · 自动选择`;
     subGroupNames.push(autoGroupName);
@@ -680,7 +689,7 @@ function createRegionGroup(displayName, icon, proxies) {
     });
   }
 
-  // 2. 嵌套「自动回退」：强制显式指定 Auto.svg
+  // 2. 嵌套「自动回退」
   if (fallbackEnabled) {
     const fallbackGroupName = `${displayName} · 自动回退`;
     subGroupNames.push(fallbackGroupName);
@@ -692,7 +701,7 @@ function createRegionGroup(displayName, icon, proxies) {
     });
   }
 
-  // 3. 嵌套「负载均衡」：强制显式指定 RoundRobin.svg
+  // 3. 嵌套「负载均衡」
   if (loadBalanceEnabled) {
     const loadBalanceGroupName = `${displayName} · 负载均衡`;
     subGroupNames.push(loadBalanceGroupName);

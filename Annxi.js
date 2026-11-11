@@ -289,6 +289,7 @@ const serviceConfigs = [
     name: 'FCM',
     baseOption: selectBaseOption,
     direct: true,
+    onlyDefaultAndDirect: true, // 仅嵌套「默认代理」和「直连」
     defaultSelected: '直连',
     providers: {
       googlefcm: {
@@ -667,19 +668,19 @@ function createRegionGroup(displayName, icon, proxies) {
   const subGroupNames = [];
   const subGroups = [];
 
-  // 1. 嵌套「自动选择」
+  // 1. 嵌套「自动选择」：使用 urlTestBaseOption 全局图标 (Auto.svg)
   if (autoSelectEnabled) {
     const autoGroupName = `${displayName} · 自动选择`;
     subGroupNames.push(autoGroupName);
     subGroups.push({
       ...urlTestBaseOption,
       name: autoGroupName,
-      icon,
+      icon: urlTestBaseOption.icon,
       proxies,
     });
   }
 
-  // 2. 嵌套「自动回退」
+  // 2. 嵌套「自动回退」：使用 fallbackBaseOption 全局图标 (Auto.svg)
   if (fallbackEnabled) {
     const fallbackGroupName = `${displayName} · 自动回退`;
     subGroupNames.push(fallbackGroupName);
@@ -691,7 +692,7 @@ function createRegionGroup(displayName, icon, proxies) {
     });
   }
 
-  // 3. 嵌套「负载均衡」
+  // 3. 嵌套「负载均衡」：使用 loadBalanceBaseOption 全局图标 (RoundRobin.svg)
   if (loadBalanceEnabled) {
     const loadBalanceGroupName = `${displayName} · 负载均衡`;
     subGroupNames.push(loadBalanceGroupName);
@@ -858,15 +859,15 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     };
   }
 
-  // 默认代理与应用分流策略组引用的基础策略组（不包含「自动回退」和「负载均衡」）
-  const baseGroupNamesForServices = baseGroupNames.filter(
+  // 默认代理不需要嵌套「自动回退」和「负载均衡」
+  const baseGroupNamesForDefault = baseGroupNames.filter(
     (name) => name !== '自动回退' && name !== '负载均衡',
   );
 
   functionalGroups.push({
     ...selectBaseOption,
     name: '默认代理',
-    proxies: [...groupNamesOfSelect, ...baseGroupNamesForServices, ...customGroupNames],
+    proxies: [...groupNamesOfSelect, ...baseGroupNamesForDefault, ...customGroupNames],
     icon: `${iconBaseUrl}Proxy.svg`,
   });
 
@@ -889,7 +890,6 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     if (svc.includeAll) {
       if (svc.name === '手动选择') {
         const subGroupsForManual = [];
-        if (ruleOptionsEnable.自动选择) subGroupsForManual.push('自动选择');
         if (ruleOptionsEnable.自动回退) subGroupsForManual.push('自动回退');
         if (ruleOptionsEnable.负载均衡) subGroupsForManual.push('负载均衡');
         groupProxies = [...subGroupsForManual, ...allProxiesNames];
@@ -898,14 +898,16 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       }
     } else if (svc.reject) {
       groupProxies = ['REJECT', 'REJECT-DROP', 'PASS'];
+    } else if (svc.onlyDefaultAndDirect || svc.name === 'FCM') {
+      // 仅嵌套「默认代理」和「直连」
+      groupProxies = ['默认代理', ...(svc.direct ? ['直连'] : [])];
     } else {
-      // 应用/分流策略组：使用 baseGroupNamesForServices（不包含自动回退和负载均衡）
       groupProxies = !addAllNodesToServiceGroupsEnabled
-        ? ['默认代理', ...customGroupNames, ...baseGroupNamesForServices, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
+        ? ['默认代理', ...customGroupNames, ...baseGroupNames, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
         : [
             '默认代理',
             ...customGroupNames,
-            ...baseGroupNamesForServices,
+            ...baseGroupNames,
             ...groupNamesOfSelect,
             ...allProxiesNames,
             ...(svc.direct ? ['直连'] : []),
@@ -1002,6 +1004,7 @@ const commonDnsList = [
   // 360 安全 DNS
   '101.226.4.6',
   '218.30.118.6',
+  '123.125.81.6',
   '140.207.198.6',
   '2400:8800:1::6',
   '2400:8800:2::6',

@@ -800,6 +800,12 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   // 提取所有类型为 select 的地区主策略组名称
   const groupNamesOfSelect = generatedRegionGroups.filter((g) => g.type === 'select').map((g) => g.name);
   const baseGroupNames = baseGroups.filter((g) => ruleOptionsEnable[g.name]).map((g) => g.name);
+  
+  // 关键修改：过滤应用分流策略组里的基础组，移除「自动回退」和「负载均衡」
+  const baseGroupNamesForService = baseGroupNames.filter(
+    (name) => name !== '自动回退' && name !== '负载均衡'
+  );
+
   const customGroupNames = customGroup ? [customGroup.name] : [];
 
   if (minimalModeEnabled) {
@@ -911,12 +917,13 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       // 仅嵌套「默认代理」和「直连」
       groupProxies = ['默认代理', ...(svc.direct ? ['直连'] : [])];
     } else {
+      // 关键修改：只嵌套 baseGroupNamesForService（排除全局自动回退与负载均衡）
       groupProxies = !addAllNodesToServiceGroupsEnabled
-        ? ['默认代理', ...customGroupNames, ...baseGroupNames, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
+        ? ['默认代理', ...customGroupNames, ...baseGroupNamesForService, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
         : [
             '默认代理',
             ...customGroupNames,
-            ...baseGroupNames,
+            ...baseGroupNamesForService,
             ...groupNamesOfSelect,
             ...allProxiesNames,
             ...(svc.direct ? ['直连'] : []),
@@ -1106,7 +1113,7 @@ const commonDnsList = [
   '2a10:50c0::bad2:ff',
   'adguard',
 
-  // Control D
+  // Control DNS
   '76.76.2.0',
   '76.76.10.0',
   '76.76.19.19',

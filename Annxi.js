@@ -100,7 +100,7 @@ const iconBaseUrl = 'https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
 
-// 定义地区策略组
+// 定义地区策略组（已兼容国旗在后或无国旗格式）
 const regionDefinitions = [
   {
     name: '香港',
@@ -289,7 +289,7 @@ const serviceConfigs = [
     name: 'FCM',
     baseOption: selectBaseOption,
     direct: true,
-    onlyDefaultAndDirect: true, // 仅嵌套「默认代理」和「直连」
+    onlyDefaultAndDirect: true,
     defaultSelected: '直连',
     providers: {
       googlefcm: {
@@ -668,38 +668,38 @@ function createRegionGroup(displayName, icon, proxies) {
   const subGroupNames = [];
   const subGroups = [];
 
-  // 1. 嵌套「自动选择」：使用 urlTestBaseOption 全局图标 (Auto.svg)
+  // 1. 嵌套「自动选择」：强制显式指定 Auto.svg
   if (autoSelectEnabled) {
     const autoGroupName = `${displayName} · 自动选择`;
     subGroupNames.push(autoGroupName);
     subGroups.push({
       ...urlTestBaseOption,
       name: autoGroupName,
-      icon: urlTestBaseOption.icon,
+      icon: `${iconBaseUrl}Auto.svg`,
       proxies,
     });
   }
 
-  // 2. 嵌套「自动回退」：使用 fallbackBaseOption 全局图标 (Auto.svg)
+  // 2. 嵌套「自动回退」：强制显式指定 Auto.svg
   if (fallbackEnabled) {
     const fallbackGroupName = `${displayName} · 自动回退`;
     subGroupNames.push(fallbackGroupName);
     subGroups.push({
       ...fallbackBaseOption,
       name: fallbackGroupName,
-      icon: fallbackBaseOption.icon,
+      icon: `${iconBaseUrl}Auto.svg`,
       proxies,
     });
   }
 
-  // 3. 嵌套「负载均衡」：使用 loadBalanceBaseOption 全局图标 (RoundRobin.svg)
+  // 3. 嵌套「负载均衡」：强制显式指定 RoundRobin.svg
   if (loadBalanceEnabled) {
     const loadBalanceGroupName = `${displayName} · 负载均衡`;
     subGroupNames.push(loadBalanceGroupName);
     subGroups.push({
       ...loadBalanceBaseOption,
       name: loadBalanceGroupName,
-      icon: loadBalanceBaseOption.icon,
+      icon: `${iconBaseUrl}RoundRobin.svg`,
       proxies,
     });
   }

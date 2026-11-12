@@ -34,6 +34,7 @@ const ruleOptionsEnable = {
   // 以下为非分流策略配置
   极简国内外分流模式: false, // 是否启用极简国内外分流模式
   生成地区自动选择组: false, // 是否为每个地区生成嵌套的自动测速组
+  生成地区负载均衡组: true, // 是否为每个地区生成嵌套的负载均衡组
   隐藏地区手动选择组: false, // 是否隐藏地区手动选择策略组
   分流组添加所有节点: false, // 是否为分流策略组添加所有节点
   生成高低倍率组: false, // 是否单独生成低倍率与高倍率节点策略组
@@ -732,7 +733,7 @@ function sortByGroupOrder(services) {
   let last = -1;
   return services
     .map((svc, index) => {
-      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-自动选择$/, ''));
+      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|负载均衡)$/, ''));
       if (order !== undefined) last = order;
       return { svc, index, key: order !== undefined ? order : last + 0.5 };
     })
@@ -742,32 +743,39 @@ function sortByGroupOrder(services) {
 
 function createRegionGroup(name, icon, proxies) {
   const generateRegionAutoSelectEnabled = ruleOptionsEnable.生成地区自动选择组 || ruleOptionsEnable.隐藏地区手动选择组;
+  const generateRegionLoadBalanceEnabled = ruleOptionsEnable.生成地区负载均衡组;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
+
+  const extraGroups = [];
+  const selectProxies = [];
 
   if (generateRegionAutoSelectEnabled) {
     const urlTestName = `${name}-自动选择`;
-    return [
-      {
-        ...urlTestBaseOption,
-        name: urlTestName,
-        proxies,
-      },
-      {
-        ...selectBaseOption,
-        name,
-        icon,
-        proxies: [urlTestName, ...proxies],
-        hidden: hideManualSelectGroupEnabled,
-      },
-    ];
+    extraGroups.push({
+      ...urlTestBaseOption,
+      name: urlTestName,
+      proxies,
+    });
+    selectProxies.push(urlTestName);
+  }
+
+  if (generateRegionLoadBalanceEnabled) {
+    const lbName = `${name}-负载均衡`;
+    extraGroups.push({
+      ...loadBalanceBaseOption,
+      name: lbName,
+      proxies,
+    });
+    selectProxies.push(lbName);
   }
 
   return [
+    ...extraGroups,
     {
       ...selectBaseOption,
       name,
       icon,
-      proxies,
+      proxies: [...selectProxies, ...proxies],
       hidden: hideManualSelectGroupEnabled,
     },
   ];

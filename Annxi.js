@@ -16,6 +16,7 @@ const ruleOptionsEnable = {
   // 基础策略组
   手动选择: true, // 是否启用手动选择策略组
   自动选择: true, // 是否启用自动选择策略组
+  自动回退: true, // 是否启用全局自动回退策略组
   负载均衡: true, // 是否启用负载均衡策略组
 
   // 以下为分流策略配置
@@ -34,6 +35,7 @@ const ruleOptionsEnable = {
   // 以下为非分流策略配置
   极简国内外分流模式: false, // 是否启用极简国内外分流模式
   生成地区自动选择组: false, // 是否为每个地区生成嵌套的自动测速组
+  生成地区自动回退组: true, // 是否为每个地区生成嵌套的自动回退组
   生成地区负载均衡组: true, // 是否为每个地区生成嵌套的负载均衡组
   隐藏地区手动选择组: false, // 是否隐藏地区手动选择策略组
   分流组添加所有节点: false, // 是否为分流策略组添加所有节点
@@ -106,6 +108,8 @@ const directProxies = [
 
 // 图标 URL 公共前缀
 const iconBaseUrl = 'https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/';
+// 自动回退图标 URL
+const fallbackIconUrl = 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SVG/main/icon/svg/common/Commerzbank.svg';
 
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
@@ -344,6 +348,14 @@ const urlTestBaseOption = {
   hidden: true,
 };
 
+const fallbackBaseOption = {
+  ...groupBaseOption,
+  type: 'fallback',
+  'exclude-type': 'DIRECT',
+  icon: fallbackIconUrl,
+  hidden: true,
+};
+
 const loadBalanceBaseOption = {
   ...groupBaseOption,
   type: 'load-balance',
@@ -368,6 +380,12 @@ const baseGroups = [
     icon: `${iconBaseUrl}Auto.svg`,
   },
   {
+    name: '自动回退',
+    baseOption: fallbackBaseOption,
+    includeAll: true,
+    icon: fallbackIconUrl,
+  },
+  {
     name: '负载均衡',
     baseOption: loadBalanceBaseOption,
     includeAll: true,
@@ -381,6 +399,7 @@ const serviceConfigs = [
   {
     name: 'FCM',
     baseOption: selectBaseOption,
+    onlyDefaultAndDirect: true,
     direct: true,
     defaultSelected: '直连',
     providers: {
@@ -733,7 +752,7 @@ function sortByGroupOrder(services) {
   let last = -1;
   return services
     .map((svc, index) => {
-      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|负载均衡)$/, ''));
+      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|自动回退|负载均衡)$/, ''));
       if (order !== undefined) last = order;
       return { svc, index, key: order !== undefined ? order : last + 0.5 };
     })
@@ -743,6 +762,7 @@ function sortByGroupOrder(services) {
 
 function createRegionGroup(name, icon, proxies) {
   const generateRegionAutoSelectEnabled = ruleOptionsEnable.生成地区自动选择组 || ruleOptionsEnable.隐藏地区手动选择组;
+  const generateRegionFallbackEnabled = ruleOptionsEnable.生成地区自动回退组;
   const generateRegionLoadBalanceEnabled = ruleOptionsEnable.生成地区负载均衡组;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
 
@@ -757,6 +777,16 @@ function createRegionGroup(name, icon, proxies) {
       proxies,
     });
     selectProxies.push(urlTestName);
+  }
+
+  if (generateRegionFallbackEnabled) {
+    const fallbackName = `${name}-自动回退`;
+    extraGroups.push({
+      ...fallbackBaseOption,
+      name: fallbackName,
+      proxies,
+    });
+    selectProxies.push(fallbackName);
   }
 
   if (generateRegionLoadBalanceEnabled) {
@@ -898,6 +928,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
 
   if (minimalModeEnabled) {
     const autoSelectGroupEnabled = ruleOptionsEnable.自动选择;
+    const fallbackGroupEnabled = ruleOptionsEnable.自动回退;
     const adBlockService = ruleOptionsEnable.AdBlock ? serviceConfigs.find((svc) => svc.priority) : null;
 
     if (adBlockService) {
@@ -915,13 +946,24 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     const defaultGroup = {
       ...selectBaseOption,
       name: '默认代理',
-      proxies: [...allProxiesNames, ...(autoSelectGroupEnabled ? ['自动选择'] : [])],
+      proxies: [
+        ...allProxiesNames,
+        ...(autoSelectGroupEnabled ? ['自动选择'] : []),
+        ...(fallbackGroupEnabled ? ['自动回退'] : []),
+      ],
       icon: `${iconBaseUrl}Proxy.svg`,
     };
 
     const autoSelectGroup = {
       ...urlTestBaseOption,
       name: '自动选择',
+      proxies: allProxiesNames,
+      hidden: true,
+    };
+
+    const fallbackGroup = {
+      ...fallbackBaseOption,
+      name: '自动回退',
       proxies: allProxiesNames,
       hidden: true,
     };
@@ -937,6 +979,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     const activeFunctionalGroups = [
       defaultGroup,
       ...(autoSelectGroupEnabled ? [autoSelectGroup] : []),
+      ...(fallbackGroupEnabled ? [fallbackGroup] : []),
       ...(adBlockGroup ? [adBlockGroup] : []),
     ];
 
@@ -997,6 +1040,8 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       groupProxies = [...allProxiesNames];
     } else if (svc.reject) {
       groupProxies = ['REJECT', 'REJECT-DROP', 'PASS'];
+    } else if (svc.onlyDefaultAndDirect) {
+      groupProxies = ['默认代理', '直连'];
     } else {
       groupProxies = !addAllNodesToServiceGroupsEnabled
         ? ['默认代理', ...customGroupNames, ...baseGroupNames, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]

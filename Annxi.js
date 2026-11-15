@@ -17,6 +17,7 @@ const ruleOptionsEnable = {
   手动选择: true, // 是否启用手动选择策略组
   自动选择: true, // 是否启用自动选择策略组
   自动回退: true, // 是否启用全局自动回退策略组
+  故障转移: true, // 是否启用全局故障转移策略组
   负载均衡: true, // 是否启用负载均衡策略组
 
   // 以下为分流策略配置
@@ -36,6 +37,7 @@ const ruleOptionsEnable = {
   极简国内外分流模式: false, // 是否启用极简国内外分流模式
   生成地区自动选择组: false, // 是否为每个地区生成嵌套的自动测速组
   生成地区自动回退组: true, // 是否为每个地区生成嵌套的自动回退组
+  生成地区故障转移组: true, // 是否为每个地区生成嵌套的故障转移组
   生成地区负载均衡组: true, // 是否为每个地区生成嵌套的负载均衡组
   隐藏地区手动选择组: false, // 是否隐藏地区手动选择策略组
   分流组添加所有节点: false, // 是否为分流策略组添加所有节点
@@ -110,6 +112,8 @@ const directProxies = [
 const iconBaseUrl = 'https://fastly.jsdelivr.net/gh/AIsouler/MyClash@main/Icons/svg/';
 // 自动回退图标 URL
 const fallbackIconUrl = 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SVG/main/icon/svg/common/Commerzbank.svg';
+// 故障转移图标 URL
+const failoverIconUrl = 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SVG/main/icon/svg/common/AdblockSite.svg';
 
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
@@ -358,6 +362,18 @@ const fallbackBaseOption = {
   hidden: true,
 };
 
+// 故障转移：mihomo 没有独立的 failover 类型，底层同为 fallback
+// 与「自动回退」的区别在参数：关闭 lazy + 300 秒主动探测，节点挂掉时切换更快，代价是探测流量稍多
+const failoverBaseOption = {
+  ...groupBaseOption,
+  type: 'fallback',
+  interval: 300,
+  lazy: false,
+  'exclude-type': 'DIRECT',
+  icon: failoverIconUrl,
+  hidden: true,
+};
+
 const loadBalanceBaseOption = {
   ...groupBaseOption,
   type: 'load-balance',
@@ -388,6 +404,12 @@ const baseGroups = [
     baseOption: fallbackBaseOption,
     includeAll: true,
     icon: fallbackIconUrl,
+  },
+  {
+    name: '故障转移',
+    baseOption: failoverBaseOption,
+    includeAll: true,
+    icon: failoverIconUrl,
   },
   {
     name: '负载均衡',
@@ -756,7 +778,7 @@ function sortByGroupOrder(services) {
   let last = -1;
   return services
     .map((svc, index) => {
-      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|自动回退|负载均衡)$/, ''));
+      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|自动回退|故障转移|负载均衡)$/, ''));
       if (order !== undefined) last = order;
       return { svc, index, key: order !== undefined ? order : last + 0.5 };
     })
@@ -767,6 +789,7 @@ function sortByGroupOrder(services) {
 function createRegionGroup(name, icon, proxies) {
   const generateRegionAutoSelectEnabled = ruleOptionsEnable.生成地区自动选择组 || ruleOptionsEnable.隐藏地区手动选择组;
   const generateRegionFallbackEnabled = ruleOptionsEnable.生成地区自动回退组;
+  const generateRegionFailoverEnabled = ruleOptionsEnable.生成地区故障转移组;
   const generateRegionLoadBalanceEnabled = ruleOptionsEnable.生成地区负载均衡组;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
 
@@ -791,6 +814,16 @@ function createRegionGroup(name, icon, proxies) {
       proxies,
     });
     selectProxies.push(fallbackName);
+  }
+
+  if (generateRegionFailoverEnabled) {
+    const failoverName = `${name}-故障转移`;
+    extraGroups.push({
+      ...failoverBaseOption,
+      name: failoverName,
+      proxies,
+    });
+    selectProxies.push(failoverName);
   }
 
   if (generateRegionLoadBalanceEnabled) {
@@ -950,11 +983,13 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   if (minimalModeEnabled) {
     const autoSelectGroupEnabled = ruleOptionsEnable.自动选择;
     const fallbackGroupEnabled = ruleOptionsEnable.自动回退;
+    const failoverGroupEnabled = ruleOptionsEnable.故障转移;
 
     const defaultProxiesList = [
       ...allProxiesNames,
       ...(autoSelectGroupEnabled ? ['自动选择'] : []),
       ...(fallbackGroupEnabled ? ['自动回退'] : []),
+      ...(failoverGroupEnabled ? ['故障转移'] : []),
     ];
 
     const defaultGroup = {
@@ -978,6 +1013,13 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       hidden: true,
     };
 
+    const failoverGroup = {
+      ...failoverBaseOption,
+      name: '故障转移',
+      proxies: allProxiesNames,
+      hidden: true,
+    };
+
     const directGroup = {
       ...selectBaseOption,
       name: '直连',
@@ -990,6 +1032,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       defaultGroup,
       ...(autoSelectGroupEnabled ? [autoSelectGroup] : []),
       ...(fallbackGroupEnabled ? [fallbackGroup] : []),
+      ...(failoverGroupEnabled ? [failoverGroup] : []),
       directGroup,
     ];
 

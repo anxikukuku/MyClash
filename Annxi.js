@@ -66,7 +66,7 @@ const directRules = [
   'DOMAIN-SUFFIX,ctaiot.com,直连',
 ];
 
-// 自定义节点定义
+// 自定义节点定义（与订阅节点重名时自动添加“自建-”前缀，并自动归入对应地区组）
 const customizeProxies = [];
 
 // 定义全局排除节点的正则表达式，用于排除非地区节点
@@ -326,10 +326,8 @@ const baseRuleProviders = {
 
 // 策略组公共配置
 const groupBaseOption = {
-  interval: 600,
-  timeout: 3000,
+  timeout: 5000,
   url: 'https://www.apple.com/library/test/success.html',
-  lazy: true,
   'max-failed-times': 3,
   'empty-fallback': 'REJECT',
 };
@@ -342,6 +340,8 @@ const selectBaseOption = {
 const urlTestBaseOption = {
   ...groupBaseOption,
   type: 'url-test',
+  interval: 600,
+  lazy: true,
   tolerance: 50,
   'exclude-type': 'DIRECT',
   icon: `${iconBaseUrl}Auto.svg`,
@@ -351,6 +351,8 @@ const urlTestBaseOption = {
 const fallbackBaseOption = {
   ...groupBaseOption,
   type: 'fallback',
+  interval: 600,
+  lazy: true,
   'exclude-type': 'DIRECT',
   icon: fallbackIconUrl,
   hidden: true,
@@ -359,6 +361,8 @@ const fallbackBaseOption = {
 const loadBalanceBaseOption = {
   ...groupBaseOption,
   type: 'load-balance',
+  interval: 600,
+  lazy: true,
   strategy: 'sticky-sessions',
   'exclude-type': 'DIRECT',
   icon: `${iconBaseUrl}RoundRobin.svg`,
@@ -800,7 +804,6 @@ function createRegionGroup(name, icon, proxies) {
   }
 
   return [
-    ...extraGroups,
     {
       ...selectBaseOption,
       name,
@@ -808,6 +811,7 @@ function createRegionGroup(name, icon, proxies) {
       proxies: [...selectProxies, ...proxies],
       hidden: hideManualSelectGroupEnabled,
     },
+    ...extraGroups,
   ];
 }
 
@@ -842,8 +846,25 @@ function buildRegionGroups(filteredProxies, customProxies) {
 
 // --- 构建自定义节点与分流策略组 ---
 
-function buildCustomizeGroups() {
-  const customProxies = customizeProxies || [];
+function buildCustomizeGroups(filteredProxies, customizeList = customizeProxies) {
+  if (!customizeList || !customizeList.length) {
+    return { customProxies: [], customProxyNames: [], customGroup: null };
+  }
+
+  const usedNames = new Set(filteredProxies.map((p) => p.name));
+  const customPrefix = '自建-';
+  const customProxies = [];
+
+  for (const proxy of customizeList) {
+    const normalized = normalizeProxyName(proxy);
+    let name = normalized.name;
+    while (usedNames.has(name)) {
+      name = normalizeProxyName({ name: `${customPrefix}${name}` }).name.replace(`${customPrefix} `, customPrefix);
+    }
+    usedNames.add(name);
+    customProxies.push(name === normalized.name ? normalized : { ...normalized, name });
+  }
+
   const customProxyNames = customProxies.map((p) => p.name);
   const customGroup = null;
   return { customProxies, customProxyNames, customGroup };
@@ -929,28 +950,17 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   if (minimalModeEnabled) {
     const autoSelectGroupEnabled = ruleOptionsEnable.自动选择;
     const fallbackGroupEnabled = ruleOptionsEnable.自动回退;
-    const adBlockService = ruleOptionsEnable.AdBlock ? serviceConfigs.find((svc) => svc.priority) : null;
 
-    if (adBlockService) {
-      priorityRules.push(...adBlockService.rules);
-      Object.assign(finalRuleProviders, adBlockService.providers);
-    }
-
-    const adBlockGroup = adBlockService && {
-      ...adBlockService.baseOption,
-      name: adBlockService.name,
-      icon: adBlockService.icon,
-      proxies: ['REJECT', 'REJECT-DROP', 'PASS'],
-    };
+    const defaultProxiesList = [
+      ...allProxiesNames,
+      ...(autoSelectGroupEnabled ? ['自动选择'] : []),
+      ...(fallbackGroupEnabled ? ['自动回退'] : []),
+    ];
 
     const defaultGroup = {
       ...selectBaseOption,
       name: '默认代理',
-      proxies: [
-        ...allProxiesNames,
-        ...(autoSelectGroupEnabled ? ['自动选择'] : []),
-        ...(fallbackGroupEnabled ? ['自动回退'] : []),
-      ],
+      proxies: defaultProxiesList.length > 0 ? defaultProxiesList : ['DIRECT'],
       icon: `${iconBaseUrl}Proxy.svg`,
     };
 
@@ -980,13 +990,13 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       defaultGroup,
       ...(autoSelectGroupEnabled ? [autoSelectGroup] : []),
       ...(fallbackGroupEnabled ? [fallbackGroup] : []),
-      ...(adBlockGroup ? [adBlockGroup] : []),
+      directGroup,
     ];
 
     const globalGroup = {
       ...selectBaseOption,
       name: 'GLOBAL',
-      proxies: [...activeFunctionalGroups.map((g) => g.name), ...customGroupNames, '直连'],
+      proxies: [...activeFunctionalGroups.map((g) => g.name), ...customGroupNames],
       icon: `${iconBaseUrl}Global.svg`,
     };
 
@@ -995,9 +1005,9 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       orderedSubGroups: activeFunctionalGroups,
       functionalRules: [],
       functionalIpRules: [],
-      priorityRules,
+      priorityRules: [],
       dnsPolicyGroups: [],
-      finalRuleProviders,
+      finalRuleProviders: { ...baseRuleProviders },
       directGroup,
     };
   }
@@ -1035,28 +1045,22 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     functionalIpRules.push(...(svc.ipRules || []));
     Object.assign(finalRuleProviders, svc.providers || {});
 
-    let groupProxies = [];
-    if (svc.includeAll) {
-      groupProxies = [...allProxiesNames];
-    } else if (svc.reject) {
-      groupProxies = ['REJECT', 'REJECT-DROP', 'PASS'];
-    } else if (svc.onlyDefaultAndDirect) {
-      groupProxies = ['默认代理', '直连'];
-    } else {
-      groupProxies = !addAllNodesToServiceGroupsEnabled
-        ? ['默认代理', ...customGroupNames, ...baseGroupNames, ...groupNamesOfSelect, ...(svc.direct ? ['直连'] : [])]
-        : [
-            '默认代理',
-            ...customGroupNames,
-            ...baseGroupNames,
-            ...groupNamesOfSelect,
-            ...allProxiesNames,
-            ...(svc.direct ? ['直连'] : []),
-          ];
-    }
+    const groupProxies = svc.includeAll
+      ? [...allProxiesNames]
+      : svc.reject
+        ? ['REJECT', 'REJECT-DROP', 'PASS']
+        : svc.onlyDefaultAndDirect
+          ? ['默认代理', '直连']
+          : [
+              '默认代理',
+              ...customGroupNames,
+              ...baseGroupNames,
+              ...groupNamesOfSelect,
+              ...(addAllNodesToServiceGroupsEnabled ? allProxiesNames : []),
+              ...(svc.direct ? ['直连'] : []),
+            ];
 
-    const selected =
-      svc.defaultSelected !== undefined && groupProxies.includes(svc.defaultSelected) ? svc.defaultSelected : undefined;
+    const selected = groupProxies.includes(svc.defaultSelected) ? svc.defaultSelected : undefined;
 
     if (!svc.reject) {
       for (const rule of svc.rules || []) {
@@ -1565,20 +1569,38 @@ function simplifyDomainPolicy(policy) {
   return result;
 }
 
+/**
+ * 构建 DNS 与 hosts：保留私有 DNS、节点域名 policy/fake-ip-filter，并按 hosts 改写节点 server
+ * hosts改写条件（满足任意一个条件即可）：
+ * 1. proxy-server-nameserver 不存在或为空
+ * 2. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含非空的 listen 值
+ * 3. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含 127.0.0.1 并且 listen 包含 0.0.0.0
+ */
 function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
   const minimalModeEnabled = ruleOptionsEnable.极简国内外分流模式;
   const originalDnsConfig = config.dns || {};
-
-  const proxyServerNameservers = originalDnsConfig['proxy-server-nameserver'] || [];
   const listenValue = originalDnsConfig['listen'];
+  const rawProxyServerNameservers = originalDnsConfig['proxy-server-nameserver'];
 
-  const shouldRewriteByHosts =
+  const proxyServerNameservers = (
+    Array.isArray(rawProxyServerNameservers)
+      ? rawProxyServerNameservers
+      : rawProxyServerNameservers === undefined || rawProxyServerNameservers === null
+        ? []
+        : [rawProxyServerNameservers]
+  ).filter((dns) => String(dns ?? '').trim() !== '');
+
+  const isProxyServerNameserverEmpty = proxyServerNameservers.length === 0;
+
+  const shouldRewriteByListen =
     proxyServerNameservers.length === 1 &&
     typeof listenValue === 'string' &&
     listenValue.length > 0 &&
     (proxyServerNameservers.some((dns) => String(dns).toLowerCase().includes(listenValue.toLowerCase())) ||
       (listenValue.includes('0.0.0.0') &&
         proxyServerNameservers.some((dns) => String(dns).toLowerCase().includes('127.0.0.1'))));
+
+  const shouldRewriteByHosts = isProxyServerNameserverEmpty || shouldRewriteByListen;
 
   const mappedProxies = shouldRewriteByHosts ? applyHostsToProxies(filteredProxies, config.hosts) : filteredProxies;
 
@@ -1707,7 +1729,7 @@ function main(config) {
   const newConfig = {};
 
   const filteredProxies = filterAndNormalizeProxies(config);
-  const { customProxies, customProxyNames, customGroup } = buildCustomizeGroups();
+  const { customProxies, customProxyNames, customGroup } = buildCustomizeGroups(filteredProxies);
 
   const generatedRegionGroups = ruleOptionsEnable.极简国内外分流模式
     ? []
@@ -1770,17 +1792,17 @@ function main(config) {
   newConfig['rule-providers'] = finalRuleProviders;
 
   newConfig['rules'] = [
+    ...priorityRules,
     ...prefixRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
-    ...priorityRules,
     ...directRules,
     ...functionalRules,
     'RULE-SET,geolocation-!cn,默认代理',
+    'RULE-SET,cn_ip,直连',
+    'RULE-SET,private_ip,直连',
     ...functionalIpRules,
 
     // 兜底规则
-    'RULE-SET,cn_ip,直连',
-    'RULE-SET,private_ip,直连',
     'MATCH,默认代理',
   ];
 

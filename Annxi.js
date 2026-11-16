@@ -363,12 +363,12 @@ const fallbackBaseOption = {
 };
 
 // 故障转移：mihomo 没有独立的 failover 类型，底层同为 fallback
-// 与「自动回退」的区别在参数：关闭 lazy + 300 秒主动探测，节点挂掉时切换更快，代价是探测流量稍多
+// 与「自动回退」的区别只在参数：同为 lazy:true 懒探测，但 interval 为 300 秒（自动回退为 600 秒），组在使用时发现故障更快，闲置时不探测
 const failoverBaseOption = {
   ...groupBaseOption,
   type: 'fallback',
   interval: 300,
-  lazy: false,
+  lazy: true,
   'exclude-type': 'DIRECT',
   icon: failoverIconUrl,
   hidden: true,

@@ -157,12 +157,12 @@ const regionDefinitions = [
     default: true,
   },
   {
-    name: '韩国',
-    flag: '🇰🇷',
+    name: '欧洲',
+    flag: '🇪🇺',
     regex:
-      /🇰🇷|(?<!北)(?:韩国|南韩)|首尔|汉城|仁川|春川|釜山|大邱|大田|光州|济州|(?<![A-Za-z])(?:KR|KOR|ICN|(?<!North\s*)(?<!NORTH\s*)(?:[Kk]orea|KOREA)(?:n|N)?|[Ss]eoul|SEOUL|[Ii]ncheon|INCHEON|[Cc]huncheon|CHUNCHEON|[Bb]usan|BUSAN|[Pp]usan|PUSAN|[Jj]eju|JEJU)(?![A-Za-z])/,
-    icon: `${iconBaseUrl}SouthKorea.svg`,
-    default: false,
+      /🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇩🇰|🇵🇱|🇦🇹|🇧🇪|🇮🇪|🇵🇹|🇬🇷|🇨🇿|🇭🇺|🇷🇴|🇧🇬|🇺🇦|🇷🇺|🇹🇷|🇮🇸|🇱🇺|🇲🇹|🇨🇾|🇪🇪|🇱🇻|🇱🇹|🇸🇰|🇸🇮|🇭🇷|🇷🇸|🇧🇦|🇲🇪|🇲🇰|🇦🇱|🇲🇩|🇧🇾|🇲🇨|🇱🇮|🇦🇩|🇸🇲|🇻🇦|欧洲|欧盟|英国|英格兰|苏格兰|伦敦|曼彻斯特|德国|法兰克福|柏林|慕尼黑|法国|巴黎|马赛|荷兰|阿姆斯特丹|鹿特丹|意大利|米兰|罗马|西班牙|马德里|巴塞罗那|瑞士|苏黎世|日内瓦|瑞典|斯德哥尔摩|芬兰|赫尔辛基|挪威|奥斯陆|丹麦|哥本哈根|波兰|华沙|奥地利|维也纳|比利时|布鲁塞尔|爱尔兰|都柏林|葡萄牙|里斯本|希腊|雅典|捷克|布拉格|匈牙利|布达佩斯|罗马尼亚|布加勒斯特|保加利亚|索非亚|乌克兰|基辅|俄罗斯|莫斯科|圣彼得堡|土耳其|伊斯坦布尔|冰岛|雷克雅未克|卢森堡|马耳他|塞浦路斯|爱沙尼亚|塔林|拉脱维亚|里加|立陶宛|维尔纽斯|斯洛伐克|布拉迪斯拉发|斯洛文尼亚|卢布尔雅那|克罗地亚|萨格勒布|塞尔维亚|贝尔格莱德|摩尔多瓦|白俄罗斯|明斯克|摩纳哥|列支敦士登|安道尔|圣马力诺|梵蒂冈|(?<![A-Za-z])(?:EU|EUR|UK|GB|GBR|LHR|MAN|DE|DEU|FRA|BER|MUC|FR|PAR|MRS|NL|NLD|AMS|RTM|IT|ITA|MIL|MXP|ROM|FCO|ES|ESP|MAD|BCN|CH|CHE|ZRH|GVA|SE|SWE|ARN|FI|FIN|HEL|NO|NOR|OSL|DK|DNK|CPH|PL|POL|WAW|AT|AUT|VIE|BE|BEL|BRU|IE|IRL|DUB|PT|PRT|LIS|GR|GRC|ATH|CZ|CZE|PRG|HU|HUN|BUD|RO|ROU|OTP|BG|BGR|SOF|UA|UKR|KBP|RU|RUS|MOW|SVO|LED|TR|TUR|IST|IS|ISL|KEF|LU|LUX|MT|MLT|MLA|CY|CYP|LCA|EE|EST|TLL|LV|LVA|RIX|LT|LTU|VNO|SK|SVK|BTS|SI|SVN|LJU|HR|HRV|ZAG|RS|SRB|BEG|BA|BIH|ME|MNE|MK|MKD|AL|ALB|MD|MDA|BY|BLR|MSQ|MC|MCO|LI|LIE|AD|AND|SM|SMR|VA|VAT|Europe|European|Britain|United\s*Kingdom|England|Scotland|London|Manchester|Germany|Frankfurt|Berlin|Munich|France|Paris|Marseille|Netherlands|Holland|Amsterdam|Rotterdam|Italy|Milan|Rome|Spain|Madrid|Barcelona|Switzerland|Zurich|Geneva|Sweden|Stockholm|Finland|Helsinki|Norway|Oslo|Denmark|Copenhagen|Poland|Warsaw|Austria|Vienna|Belgium|Brussels|Ireland|Dublin|Portugal|Lisbon|Greece|Athens|Czech|Czechia|Prague|Hungary|Budapest|Romania|Bucharest|Bulgaria|Sofia|Ukraine|Kyiv|Kiev|Russia|Moscow|Turkey|Istanbul|Iceland|Reykjavik|Luxembourg|Malta|Cyprus|Estonia|Tallinn|Latvia|Riga|Lithuania|Vilnius|Slovakia|Bratislava|Slovenia|Ljubljana|Croatia|Zagreb|Serbia|Belgrade|Bosnia|Montenegro|Macedonia|Albania|Moldova|Belarus|Minsk|Monaco|Liechtenstein|Andorra|San\s*Marino|Vatican)(?![A-Za-z])/i,
+    icon: 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SVG/main/icon/svg/flag/European_Union.svg',
+    default: true,
   },
 ];
 
@@ -291,6 +291,24 @@ const baseRuleProviders = {
     url: `${ruleSetBaseUrl}geoip/cn.mrs`,
     path: './ruleset/cn_ip.mrs',
     'path-in-bundle': 'geo/geoip/cn.mrs',
+  },
+  us_ip: {
+    ...ruleProviderCommonIpcidr,
+    url: `${ruleSetBaseUrl}geoip/us.mrs`,
+    path: './ruleset/us_ip.mrs',
+    'path-in-bundle': 'geo/geoip/us.mrs',
+  },
+  nl_ip: {
+    ...ruleProviderCommonIpcidr,
+    url: `${ruleSetBaseUrl}geoip/nl.mrs`,
+    path: './ruleset/nl_ip.mrs',
+    'path-in-bundle': 'geo/geoip/nl.mrs',
+  },
+  sg_ip: {
+    ...ruleProviderCommonIpcidr,
+    url: `${ruleSetBaseUrl}geoip/sg.mrs`,
+    path: './ruleset/sg_ip.mrs',
+    'path-in-bundle': 'geo/geoip/sg.mrs',
   },
 
   // --- 代理规则集 ---
@@ -592,12 +610,7 @@ const serviceConfigs = [
       },
     },
     icon: `${iconBaseUrl}Emby.svg`,
-    rules: [
-      'RULE-SET,emby,Emby',
-      'DOMAIN-SUFFIX,mb3admin.com,Emby',
-      'DOMAIN-SUFFIX,nubebelle.com,Emby',
-      'DOMAIN-KEYWORD,emby,Emby',
-    ],
+    rules: ['RULE-SET,emby,Emby'],
   },
   {
     name: 'EHentai',
@@ -1777,6 +1790,7 @@ function main(config) {
   const generatedRegionGroups = ruleOptionsEnable.极简国内外分流模式
     ? []
     : buildRegionGroups(filteredProxies, customProxies);
+  const generatedGroupNames = new Set(generatedRegionGroups.map((g) => g.name));
 
   const {
     globalGroup,
@@ -1839,10 +1853,27 @@ function main(config) {
     ...prefixRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...directRules,
+
+    // Telegram 按 DC 所在国家就近分流（DC1/3->美国, DC2/4->欧洲[荷兰], DC5->新加坡）
+    ...(ruleOptionsEnable.Telegram && !ruleOptionsEnable.极简国内外分流模式
+      ? [
+          ...(generatedGroupNames.has('美国')
+            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,us_ip)),美国']
+            : []),
+          ...(generatedGroupNames.has('欧洲')
+            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,nl_ip)),欧洲']
+            : []),
+          ...(generatedGroupNames.has('新加坡')
+            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,sg_ip)),新加坡']
+            : []),
+        ]
+      : []),
+
     ...functionalRules,
     'RULE-SET,geolocation-!cn,默认代理',
     'RULE-SET,cn_ip,直连',
     'RULE-SET,private_ip,直连',
+
     ...functionalIpRules,
 
     // 兜底规则

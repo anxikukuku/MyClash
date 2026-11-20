@@ -66,9 +66,6 @@ const directRules = [
   'DOMAIN-SUFFIX,ctaiot.com,直连',
 ];
 
-// 自定义节点定义（与订阅节点重名时自动添加“自建-”前缀，并自动归入对应地区组）
-const customizeProxies = [];
-
 // 定义全局排除节点的正则表达式，用于排除非地区节点
 const excludeFilter =
   /群|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|电报|无法|说明|提示|访问|支持|教程|关注|更新|作者|加入|超时|收藏|优惠|福利|邀请|好友|失联|选择|剩余|公益|发布|DIZTNA|通路|登录|禁止|定时|渠道|牢记|永久|余额|阁下|本站|刷新|导航|建议|重置|以下|过滤|⚠️|@|t\.me\/\+|\bexpire\b|\bhttps?:\/\/|\.com|\btraffic\b/iu;
@@ -113,6 +110,8 @@ const fallbackIconUrl = 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SV
 
 // 规则集 URL 公共前缀
 const ruleSetBaseUrl = 'https://fastly.jsdelivr.net/gh/appshubcc/bett-rules@meta/geo/';
+// 直连策略组专用测速地址
+const directTestUrl = 'http://dns.alidns.com';
 
 // 定义默认地区策略组
 const regionDefinitions = [
@@ -162,7 +161,7 @@ const regionDefinitions = [
   },
 ];
 
-// 解析 Bettbox 自定义扩展地区
+// 解析 Bettbox 自定义扩展地区（剔除 g/y 状态修饰符，并安全转义回退名称）
 const customRegionDefinitions =
   typeof bettboxCustomRegions !== 'undefined' && Array.isArray(bettboxCustomRegions)
     ? bettboxCustomRegions
@@ -171,14 +170,15 @@ const customRegionDefinitions =
           let reg;
           try {
             const match = r.regex.match(/^\/(.+)\/([a-z]*)$/i);
-            if (match) {
-              const flags = match[2].includes('i') ? match[2] : `${match[2]}i`;
-              reg = new RegExp(match[1], flags);
-            } else {
-              reg = new RegExp(r.regex, 'i');
-            }
+            const source = match ? match[1] : r.regex.trim();
+            if (!source) throw new SyntaxError('empty pattern');
+            reg = new RegExp(source, `${match ? match[2].replace(/[gyi]/gi, '') : ''}i`);
           } catch {
-            reg = new RegExp(r.name, 'i');
+            const escaped =
+              typeof RegExp.escape === 'function'
+                ? RegExp.escape(r.name)
+                : r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            reg = new RegExp(escaped, 'i');
           }
           return {
             name: r.name,
@@ -196,7 +196,7 @@ const activeRegionDefinitions = allAvailableRegions.filter((region) =>
   enabledRegionNames ? enabledRegionNames.has(region.name) : region.default !== false,
 );
 
-// 高低倍率策略组定义
+// 高低倍率策略组定义（精确边界匹配，避免 x09 / Max0 误判）
 const lowRateRegionName = '低倍率节点';
 const highRateRegionName = '高倍率节点';
 
@@ -204,13 +204,13 @@ const rateRegionDefinitions = [
   {
     name: lowRateRegionName,
     regex:
-      /^(?!.*(?:剩|期)).*(?:(?<![\d.])0(\.[0-5]|[*×✕✖⨯⨉x倍]))|(?:[*×✕✖⨯⨉x]0)|^(?!.*(?:客户端|软件)).*下载|低倍|免费|(?<![A-Za-z])free(?![A-Za-z])/i,
+      /^(?!.*(?:剩|期)).*(?:(?<![\d.])0(?:\.[0-5]|[*×✕✖⨯⨉倍]|x(?![A-Za-z])))|(?:(?:[*×✕✖⨯⨉]|(?<![A-Za-z])x)0(?:\.[0-5]\d*)?(?![\d.]))|^(?!.*(?:客户端|软件)).*下载|低倍|免费|(?<![A-Za-z])free(?![A-Za-z])/i,
     icon: `${iconBaseUrl}Available.svg`,
   },
   {
     name: highRateRegionName,
     regex:
-      /(?:[*×✕✖⨯⨉x](?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?)|(?:(?<![\d.])(?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?(?:倍|[*×✕✖⨯⨉x]))/i,
+      /(?:(?:[*×✕✖⨯⨉]|(?<![A-Za-z])x)(?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?)|(?:(?<![\d.])(?:[2-9]\d*|[1-9]\d+)(?:\.\d+)?(?:倍|[*×✕✖⨯⨉]|x(?![A-Za-z])))/i,
     icon: `${iconBaseUrl}Airport.svg`,
   },
 ];
@@ -624,14 +624,41 @@ const serviceConfigs = [
   },
 ];
 
-// 适配 Bettbox 策略组开关与排序/自定义路由
+// 适配 Bettbox 策略组开关与排序/自定义路由/节点地区预览
 Compatible_With_Bettbox.policyGroupOptions = serviceConfigs.map((svc) => svc.name);
 const customRoutes = typeof bettboxRoutes !== 'undefined' && Array.isArray(bettboxRoutes) ? bettboxRoutes : [];
 const groupOrder = typeof bettboxOrder !== 'undefined' && Array.isArray(bettboxOrder) ? bettboxOrder : [];
+const builtInReservedNames = [
+  'GLOBAL',
+  'DIRECT',
+  'REJECT',
+  'REJECT-DROP',
+  'PASS',
+  'PASS-RULE',
+  'COMPATIBLE',
+  '默认代理',
+  '直连',
+  '其他节点',
+  '其他节点-自动选择',
+  '其他节点-自动回退',
+  '其他节点-负载均衡',
+  ...serviceConfigs.map((svc) => svc.name),
+  ...allRegionDefinitions.flatMap((region) => [
+    region.name,
+    `${region.name}-自动选择`,
+    `${region.name}-自动回退`,
+    `${region.name}-负载均衡`,
+  ]),
+  ...directProxies.map((p) => p.name),
+];
 
 // --- 节点过滤、重命名及验证 ---
 
-const invisibleCharsRegex = /[\u00AD\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u206F\uFEFF\u115F\u1160\u3164\uFFA0]/g;
+/**
+ * 零宽/不可见字符：清除干扰字符的同时精准白名单保留 ZWNJ/ZWJ、变体选择符与地区旗帜标签字符
+ */
+const invisibleCharsRegex =
+  /[\p{Default_Ignorable_Code_Point}--[\u200C\u200D\uFE00-\uFE0F\u{E0020}-\u{E007F}\u{E0100}-\u{E01EF}]]/gv;
 
 function toMatchableName(name) {
   return typeof name === 'string' ? name.replace(invisibleCharsRegex, '') : name;
@@ -650,14 +677,33 @@ function getMatchedRegions(proxyName) {
   return regions;
 }
 
-const flagRegex = /[\u{1F1E6}-\u{1F1FF}]{2}/u;
+// 暴露节点地区映射供 Bettbox 客户端 UI 提前预览分组结果
+const userNodeNames =
+  typeof bettboxNodeNames !== 'undefined' && Array.isArray(bettboxNodeNames)
+    ? bettboxNodeNames.filter((name) => typeof name === 'string' && name)
+    : [];
+
+Compatible_With_Bettbox.nodeRegions = Object.fromEntries(
+  userNodeNames.map((name) => [
+    name,
+    getMatchedRegions(name)
+      .filter((region) => activeRegionDefinitions.includes(region))
+      .map((region) => region.name),
+  ]),
+);
+
+const flagRegex = /\p{RGI_Emoji_Flag_Sequence}/v;
 function normalizeProxyName(proxy) {
   const originalName = proxy.name;
   const flag = originalName.match(flagRegex)?.[0];
   const nameWithoutFlag = (flag ? originalName.replace(flag, '') : originalName).replace(/\s+/g, ' ').trim();
   const matchedRegions = getMatchedRegions(originalName);
   const regionFlag = flag || matchedRegions.find((region) => region.flag)?.flag;
-  const normalizedName = regionFlag ? `${regionFlag} ${nameWithoutFlag}` : nameWithoutFlag;
+  const normalizedName = regionFlag
+    ? nameWithoutFlag
+      ? `${regionFlag} ${nameWithoutFlag}`
+      : regionFlag
+    : nameWithoutFlag;
 
   if (normalizedName !== originalName) {
     regionMatchCache.set(normalizedName, matchedRegions);
@@ -666,21 +712,31 @@ function normalizeProxyName(proxy) {
   return normalizedName === originalName ? proxy : { ...proxy, name: normalizedName };
 }
 
-function fixDialerProxy(proxy, renameMap, normalizedProxyNames) {
-  const target = proxy['dialer-proxy'];
-  if (!target) return proxy;
-
-  if (renameMap.has(target)) {
-    return { ...proxy, 'dialer-proxy': renameMap.get(target) };
+/**
+ * 解析 dialer-proxy 目标：节点按重命名更新，只含单个成员的原策略组展开为该成员，无法确定唯一节点时返回 null
+ */
+function resolveDialerTarget(target, renameMap, proxyNames, groupMembers) {
+  const seen = new Set();
+  let current = target;
+  while (!seen.has(current)) {
+    seen.add(current);
+    if (renameMap.has(current)) return renameMap.get(current);
+    if (proxyNames.has(current)) return current;
+    const members = groupMembers.get(current);
+    if (members?.length !== 1) return null;
+    current = members[0];
   }
+  return null;
+}
 
-  if (normalizedProxyNames.has(target)) {
-    return proxy;
-  }
-
-  const copy = { ...proxy };
-  delete copy['dialer-proxy'];
-  return copy;
+/**
+ * 修复 dialer-proxy 引用：目标无法解析为保留下来的节点时返回 null，由调用方整条剔除该节点，避免中转失效后直连落地
+ */
+function fixDialerProxy(proxy, renameMap, proxyNames, groupMembers) {
+  if (proxy['dialer-proxy'] == null || proxy['dialer-proxy'] === '') return proxy;
+  const target = resolveDialerTarget(String(proxy['dialer-proxy']), renameMap, proxyNames, groupMembers);
+  if (target === null) return null;
+  return target === proxy['dialer-proxy'] ? proxy : { ...proxy, 'dialer-proxy': target };
 }
 
 function getIpVersionPreference() {
@@ -706,7 +762,9 @@ function filterAndNormalizeProxies(config) {
     ? rateRegionDefinitions.find((r) => r.name === highRateRegionName)?.regex
     : null;
 
-  const originalProxies = config.proxies || [];
+  const originalProxies = (Array.isArray(config.proxies) ? config.proxies : [])
+    .filter((proxy) => proxy && typeof proxy === 'object' && proxy.name != null)
+    .map((proxy) => (typeof proxy.name === 'string' ? proxy : { ...proxy, name: String(proxy.name) }));
 
   const filteredRawProxies = originalProxies.filter((proxy) => {
     const type = String(proxy.type ?? '').toLowerCase();
@@ -723,23 +781,56 @@ function filterAndNormalizeProxies(config) {
     return isRegionProxy || !excludeFilter.test(matchableName);
   });
 
+  const reservedProxyNames = new Set([
+    ...builtInReservedNames,
+    ...customRoutes
+      .filter((route) => route && typeof route.name === 'string' && Array.isArray(route.sets) && route.sets.length > 0)
+      .map((route) => route.name),
+  ]);
   const renameMap = new Map();
   const normalizedProxies = [];
-  const uniqueNames = new Set();
+  const rawNames = new Set();
+  const proxyNames = new Set();
 
   for (const rawProxy of filteredRawProxies) {
-    const normalized = normalizeProxyName(rawProxy);
+    if (rawNames.has(rawProxy.name)) continue;
+    rawNames.add(rawProxy.name);
+
+    let normalized = normalizeProxyName(rawProxy);
+    const baseName = normalized.name || '节点';
+    let candidate = baseName;
+    if (proxyNames.has(candidate) || reservedProxyNames.has(candidate)) {
+      let index = 2;
+      while (proxyNames.has(`${baseName} ${index}`) || reservedProxyNames.has(`${baseName} ${index}`)) index++;
+      candidate = `${baseName} ${index}`;
+    }
+    if (candidate !== normalized.name) {
+      regionMatchCache.set(candidate, getMatchedRegions(rawProxy.name));
+      normalized = { ...normalized, name: candidate };
+    }
     if (normalized.name !== rawProxy.name) {
       renameMap.set(rawProxy.name, normalized.name);
     }
-    if (!uniqueNames.has(normalized.name)) {
-      uniqueNames.add(normalized.name);
-      normalizedProxies.push(normalized);
-    }
+    proxyNames.add(normalized.name);
+    normalizedProxies.push(normalized);
   }
 
-  const normalizedProxyNames = new Set(normalizedProxies.map((p) => p.name));
-  const filteredProxies = normalizedProxies.map((proxy) => fixDialerProxy(proxy, renameMap, normalizedProxyNames));
+  const groupMembers = new Map(
+    (Array.isArray(config['proxy-groups']) ? config['proxy-groups'] : [])
+      .filter((group) => group && group.name != null && Array.isArray(group.proxies))
+      .map((group) => [String(group.name), group.proxies.map(String)]),
+  );
+
+  let filteredProxies = normalizedProxies
+    .map((proxy) => fixDialerProxy(proxy, renameMap, proxyNames, groupMembers))
+    .filter(Boolean);
+
+  for (;;) {
+    const names = new Set(filteredProxies.map((proxy) => proxy.name));
+    const next = filteredProxies.filter((proxy) => !proxy['dialer-proxy'] || names.has(proxy['dialer-proxy']));
+    if (next.length === filteredProxies.length) break;
+    filteredProxies = next;
+  }
 
   const proxyProviders = config['proxy-providers'] || config.proxyProviders;
   const hasProviders = Boolean(
@@ -777,11 +868,14 @@ function sortByGroupOrder(services) {
     .map((entry) => entry.svc);
 }
 
-function createRegionGroup(name, icon, proxies) {
+function createRegionGroup(name, icon, proxies, userNodes) {
   const generateRegionAutoSelectEnabled = ruleOptionsEnable.生成地区自动选择组 || ruleOptionsEnable.隐藏地区手动选择组;
   const generateRegionFallbackEnabled = ruleOptionsEnable.生成地区自动回退组;
   const generateRegionLoadBalanceEnabled = ruleOptionsEnable.生成地区负载均衡组;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
+
+  const region = userNodes ? { 'x-region': name } : {};
+  const regionNodes = userNodes?.length ? { 'x-region-nodes': userNodes } : {};
 
   const extraGroups = [];
   const selectProxies = [];
@@ -791,6 +885,7 @@ function createRegionGroup(name, icon, proxies) {
     extraGroups.push({
       ...urlTestBaseOption,
       name: urlTestName,
+      ...region,
       proxies,
     });
     selectProxies.push(urlTestName);
@@ -801,6 +896,7 @@ function createRegionGroup(name, icon, proxies) {
     extraGroups.push({
       ...fallbackBaseOption,
       name: fallbackName,
+      ...region,
       proxies,
     });
     selectProxies.push(fallbackName);
@@ -811,6 +907,7 @@ function createRegionGroup(name, icon, proxies) {
     extraGroups.push({
       ...loadBalanceBaseOption,
       name: lbName,
+      ...region,
       proxies,
     });
     selectProxies.push(lbName);
@@ -821,6 +918,8 @@ function createRegionGroup(name, icon, proxies) {
       ...selectBaseOption,
       name,
       icon,
+      ...region,
+      ...regionNodes,
       proxies: [...selectProxies, ...proxies],
       hidden: hideManualSelectGroupEnabled,
     },
@@ -828,12 +927,12 @@ function createRegionGroup(name, icon, proxies) {
   ];
 }
 
-function buildRegionGroups(filteredProxies, customProxies) {
+function buildRegionGroups(filteredProxies) {
   const generateRateGroupEnabled = ruleOptionsEnable.生成高低倍率组;
   const regionGroups = Object.fromEntries(allRegionDefinitions.map(({ name }) => [name, []]));
   const otherProxies = [];
 
-  for (const proxy of [...filteredProxies, ...customProxies]) {
+  for (const proxy of filteredProxies) {
     const matchedRegions = getMatchedRegions(proxy.name);
     const isRegionProxy = matchedRegions.some((region) => activeRegionDefinitions.includes(region));
 
@@ -848,7 +947,16 @@ function buildRegionGroups(filteredProxies, customProxies) {
 
   const generatedRegionGroups = sortByGroupOrder(allRegionDefinitions)
     .filter((r) => regionGroups[r.name].length > 0 && (generateRateGroupEnabled || !rateRegionDefinitions.includes(r)))
-    .flatMap((r) => createRegionGroup(r.name, r.icon, regionGroups[r.name]));
+    .flatMap((r) =>
+      createRegionGroup(
+        r.name,
+        r.icon,
+        regionGroups[r.name],
+        activeRegionDefinitions.includes(r)
+          ? userNodeNames.filter((name) => Compatible_With_Bettbox.nodeRegions[name].includes(r.name))
+          : undefined,
+      ),
+    );
 
   if (otherProxies.length > 0) {
     generatedRegionGroups.push(...createRegionGroup('其他节点', `${iconBaseUrl}WorldMap.svg`, otherProxies));
@@ -857,31 +965,7 @@ function buildRegionGroups(filteredProxies, customProxies) {
   return generatedRegionGroups;
 }
 
-// --- 构建自定义节点与分流策略组 ---
-
-function buildCustomizeGroups(filteredProxies, customizeList = customizeProxies) {
-  if (!customizeList || !customizeList.length) {
-    return { customProxies: [], customProxyNames: [], customGroup: null };
-  }
-
-  const usedNames = new Set(filteredProxies.map((p) => p.name));
-  const customPrefix = '自建-';
-  const customProxies = [];
-
-  for (const proxy of customizeList) {
-    const normalized = normalizeProxyName(proxy);
-    let name = normalized.name;
-    while (usedNames.has(name)) {
-      name = normalizeProxyName({ name: `${customPrefix}${name}` }).name.replace(`${customPrefix} `, customPrefix);
-    }
-    usedNames.add(name);
-    customProxies.push(name === normalized.name ? normalized : { ...normalized, name });
-  }
-
-  const customProxyNames = customProxies.map((p) => p.name);
-  const customGroup = null;
-  return { customProxies, customProxyNames, customGroup };
-}
+// --- 构建自定义分流策略组 ---
 
 function buildCustomServices(reservedNames) {
   const knownProviders = { ...baseRuleProviders };
@@ -941,7 +1025,7 @@ function buildCustomServices(reservedNames) {
   return services;
 }
 
-function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customizeInfo) {
+function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
   const minimalModeEnabled = ruleOptionsEnable.极简国内外分流模式;
   const addAllNodesToServiceGroupsEnabled = ruleOptionsEnable.分流组添加所有节点;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
@@ -953,16 +1037,25 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   const dnsPolicyGroups = [];
   const finalRuleProviders = { ...baseRuleProviders };
 
-  const { customProxyNames = [], customGroup = null } = customizeInfo || {};
-  const filteredProxyNames = filteredProxies.map((p) => p.name);
-  const allProxiesNames = [...filteredProxyNames, ...customProxyNames];
+  const allProxiesNames = filteredProxies.map((p) => p.name);
   const groupNamesOfSelect = generatedRegionGroups.filter((g) => g.type === 'select').map((g) => g.name);
   const baseGroupNames = baseGroups.filter((g) => ruleOptionsEnable[g.name]).map((g) => g.name);
-  const customGroupNames = customGroup ? [customGroup.name] : [];
 
   if (minimalModeEnabled) {
     const autoSelectGroupEnabled = ruleOptionsEnable.自动选择;
     const fallbackGroupEnabled = ruleOptionsEnable.自动回退;
+
+    const adBlockService = ruleOptionsEnable.AdBlock ? serviceConfigs.find((svc) => svc.priority) : null;
+    const adBlockGroup = adBlockService && {
+      ...adBlockService.baseOption,
+      name: adBlockService.name,
+      icon: adBlockService.icon,
+      proxies: ['REJECT', 'REJECT-DROP', 'PASS'],
+    };
+    if (adBlockService) {
+      priorityRules.push(...adBlockService.rules);
+      Object.assign(finalRuleProviders, adBlockService.providers);
+    }
 
     const defaultProxiesList = [
       ...allProxiesNames,
@@ -994,6 +1087,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
     const directGroup = {
       ...selectBaseOption,
       name: '直连',
+      url: directTestUrl,
       proxies: [...directProxies.map((p) => p.name)],
       icon: `${iconBaseUrl}China.svg`,
       hidden: true,
@@ -1003,13 +1097,14 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       defaultGroup,
       ...(autoSelectGroupEnabled ? [autoSelectGroup] : []),
       ...(fallbackGroupEnabled ? [fallbackGroup] : []),
+      ...(adBlockGroup ? [adBlockGroup] : []),
       directGroup,
     ];
 
     const globalGroup = {
       ...selectBaseOption,
       name: 'GLOBAL',
-      proxies: [...activeFunctionalGroups.map((g) => g.name), ...customGroupNames],
+      proxies: activeFunctionalGroups.map((g) => g.name),
       icon: `${iconBaseUrl}Global.svg`,
     };
 
@@ -1018,9 +1113,9 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
       orderedSubGroups: activeFunctionalGroups,
       functionalRules: [],
       functionalIpRules: [],
-      priorityRules: [],
+      priorityRules,
       dnsPolicyGroups: [],
-      finalRuleProviders: { ...baseRuleProviders },
+      finalRuleProviders,
       directGroup,
     };
   }
@@ -1028,23 +1123,14 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   functionalGroups.push({
     ...selectBaseOption,
     name: '默认代理',
-    proxies: [...groupNamesOfSelect, ...baseGroupNames, ...customGroupNames],
+    proxies: [...groupNamesOfSelect, ...baseGroupNames],
     icon: `${iconBaseUrl}Proxy.svg`,
   });
 
   const reservedNames = new Set([
-    'GLOBAL',
-    'DIRECT',
-    'REJECT',
-    'REJECT-DROP',
-    'PASS',
-    'COMPATIBLE',
-    '默认代理',
-    '直连',
-    ...serviceConfigs.map((svc) => svc.name),
+    ...builtInReservedNames,
     ...generatedRegionGroups.map((g) => g.name),
     ...allProxiesNames,
-    ...directProxies.map((p) => p.name),
   ]);
 
   const services = [...serviceConfigs];
@@ -1066,7 +1152,6 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
           ? ['默认代理', '直连']
           : [
               '默认代理',
-              ...customGroupNames,
               ...baseGroupNames,
               ...groupNamesOfSelect,
               ...(addAllNodesToServiceGroupsEnabled ? allProxiesNames : []),
@@ -1095,6 +1180,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   const directGroup = {
     ...selectBaseOption,
     name: '直连',
+    url: directTestUrl,
     proxies: [...directProxies.map((p) => p.name)],
     icon: `${iconBaseUrl}China.svg`,
     hidden: hideManualSelectGroupEnabled,
@@ -1103,7 +1189,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups, customize
   const [defaultGroup, ...serviceGroups] = functionalGroups;
   const orderedSubGroups = [
     defaultGroup,
-    ...sortByGroupOrder([...serviceGroups, ...(customGroup ? [customGroup] : []), directGroup, ...generatedRegionGroups]),
+    ...sortByGroupOrder([...serviceGroups, directGroup, ...generatedRegionGroups]),
   ];
 
   const globalGroup = {
@@ -1310,10 +1396,16 @@ const commonDnsList = [
   'dns.apple',
 ];
 
-const commonDnsRegex = new RegExp(
-  commonDnsList.map((dns) => dns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-  'i',
-);
+const commonDnsIps = new Set(commonDnsList.filter(isIpAddress));
+const commonDnsKeywords = commonDnsList.filter((dns) => !isIpAddress(dns));
+
+function dnsHost(dns) {
+  let host = dns.replace(/^[a-z][a-z0-9+.-]*:\/\//, '').split(/[/?#]/, 1)[0];
+  host = host.slice(host.lastIndexOf('@') + 1);
+  const bracketed = host.match(/^\[([^\]]*)\]/);
+  if (bracketed) return bracketed[1];
+  return host.indexOf(':') === host.lastIndexOf(':') ? host.split(':')[0] : host;
+}
 
 // 业务直连 DNS 绑定至「直连」策略组，继承 UI 中选择的 IPv4/IPv6 偏好
 const chinaDNS = [
@@ -1583,7 +1675,7 @@ function simplifyDomainPolicy(policy) {
 }
 
 /**
- * 构建 DNS 与 hosts：保留私有 DNS、节点域名 policy/fake-ip-filter，并按 hosts 改写节点 server
+ * 构建 DNS 与 hosts：保留私有 DNS、节点域名 policy/fake-ip-filter 与命中节点域名的订阅 hosts，并按 hosts 改写节点 server
  * hosts改写条件（满足任意一个条件即可）：
  * 1. proxy-server-nameserver 不存在或为空
  * 2. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含非空的 listen 值
@@ -1630,7 +1722,9 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
   const isCommonDns = (dns) => {
     const value = String(dns).trim().toLowerCase();
     if (value === 'system' || value === 'system://') return true;
-    return commonDnsRegex.test(value);
+
+    const host = dnsHost(value);
+    return commonDnsIps.has(host) || commonDnsKeywords.some((keyword) => host.includes(keyword));
   };
 
   const privateDNS = [
@@ -1715,7 +1809,18 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
     'direct-nameserver-follow-policy': true,
   };
 
+  // 保留订阅中命中节点域名的 hosts 映射，避免未走 local-listen 劫持的专属域名失联
+  const proxyHosts = Object.fromEntries(
+    Object.entries(config.hosts && typeof config.hosts === 'object' ? config.hosts : {}).filter(
+      ([pattern, value]) =>
+        ((typeof value === 'string' && value.length > 0) || (Array.isArray(value) && value.length > 0)) &&
+        matchProxyDomain(pattern),
+    ),
+  );
+
   const hosts = {
+    ...proxyHosts,
+
     // 补全全部国内外 DoH 域名静态 IP 映射，消除二次引导延迟
     'dns.alidns.com': ['223.5.5.5', '223.6.6.6', '2400:3200::1', '2400:3200:baba::1'],
     'doh.pub': ['1.12.12.12', '120.53.53.53', '2402:4e00::', '2402:4e00:1::'],
@@ -1742,11 +1847,10 @@ function main(config) {
   const newConfig = {};
 
   const filteredProxies = filterAndNormalizeProxies(config);
-  const { customProxies, customProxyNames, customGroup } = buildCustomizeGroups(filteredProxies);
 
   const generatedRegionGroups = ruleOptionsEnable.极简国内外分流模式
     ? []
-    : buildRegionGroups(filteredProxies, customProxies);
+    : buildRegionGroups(filteredProxies);
   const generatedGroupNames = new Set(generatedRegionGroups.map((g) => g.name));
 
   const {
@@ -1757,7 +1861,7 @@ function main(config) {
     priorityRules,
     dnsPolicyGroups,
     finalRuleProviders,
-  } = buildFunctionalGroups(filteredProxies, generatedRegionGroups, { customProxyNames, customGroup });
+  } = buildFunctionalGroups(filteredProxies, generatedRegionGroups);
 
   const { dns, hosts, proxies: mappedProxies } = buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups);
 
@@ -1801,7 +1905,7 @@ function main(config) {
     'dns-hijack': ['any:53', 'tcp://any:53'],
   };
 
-  newConfig['proxies'] = [...mappedProxies, ...customProxies, ...directProxies];
+  newConfig['proxies'] = [...mappedProxies, ...directProxies];
   newConfig['proxy-groups'] = [globalGroup, ...orderedSubGroups];
   newConfig['rule-providers'] = finalRuleProviders;
 

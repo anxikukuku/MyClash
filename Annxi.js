@@ -156,7 +156,9 @@ const regionDefinitions = [
     name: '欧洲',
     flag: '🇪🇺',
     regex:
-      /🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇩🇰|🇵🇱|🇦🇹|🇧🇪|🇮🇪|🇵🇹|🇬🇷|🇨🇿|🇭🇺|🇷🇴|🇧🇬|🇺🇦|🇷🇺|🇹🇷|🇮🇸|🇱🇺|🇲🇹|🇨🇾|🇪🇪|🇱🇻|🇱🇹|🇸🇰|🇸🇮|🇭🇷|🇷🇸|🇧🇦|🇲🇪|🇲🇰|🇦🇱|🇲🇩|🇧🇾|🇲🇨|🇱🇮|🇦🇩|🇸🇲|🇻🇦|欧洲|欧盟|英国|英格兰|苏格兰|伦敦|曼彻斯特|德国|法兰克福|柏林|慕尼黑|法国|巴黎|马赛|荷兰|阿姆斯特丹|鹿特丹|意大利|米兰|罗马|西班牙|马德里|巴塞罗那|瑞士|苏黎世|日内瓦|瑞典|斯德哥尔摩|芬兰|赫尔辛基|挪威|奥斯陆|丹麦|哥本哈根|波兰|华沙|奥地利|维也纳|比利时|布鲁塞尔|爱尔兰|都柏林|葡萄牙|里斯本|希腊|雅典|捷克|布拉格|匈牙利|布达佩斯|罗马尼亚|布加勒斯特|保加利亚|索非亚|乌克兰|基辅|俄罗斯|莫斯科|圣彼得堡|土耳其|伊斯坦布尔|冰岛|雷克雅未克|卢森堡|马耳他|塞浦路斯|爱沙尼亚|塔林|拉脱维亚|里加|立陶宛|维尔纽斯|斯洛伐克|布拉迪斯拉发|斯洛文尼亚|卢布尔雅那|克罗地亚|萨格勒布|塞尔维亚|贝尔格莱德|摩尔多瓦|白俄罗斯|明斯克|摩纳哥|列支敦士登|安道尔|圣马力诺|梵蒂冈|(?<![A-Za-z])(?:EU|EUR|UK|GB|GBR|LHR|MAN|DE|DEU|FRA|BER|MUC|FR|PAR|MRS|NL|NLD|AMS|RTM|IT|ITA|MIL|MXP|ROM|FCO|ES|ESP|MAD|BCN|CH|CHE|ZRH|GVA|SE|SWE|ARN|FI|FIN|HEL|NO|NOR|OSL|DK|DNK|CPH|PL|POL|WAW|AT|AUT|VIE|BE|BEL|BRU|IE|IRL|DUB|PT|PRT|LIS|GR|GRC|ATH|CZ|CZE|PRG|HU|HUN|BUD|RO|ROU|OTP|BG|BGR|SOF|UA|UKR|KBP|RU|RUS|MOW|SVO|LED|TR|TUR|IST|IS|ISL|KEF|LU|LUX|MT|MLT|MLA|CY|CYP|LCA|EE|EST|TLL|LV|LVA|RIX|LT|LTU|VNO|SK|SVK|BTS|SI|SVN|LJU|HR|HRV|ZAG|RS|SRB|BEG|BA|BIH|ME|MNE|MK|MKD|AL|ALB|MD|MDA|BY|BLR|MSQ|MC|MCO|LI|LIE|AD|AND|SM|SMR|VA|VAT|Europe|European|Britain|United\s*Kingdom|England|Scotland|London|Manchester|Germany|Frankfurt|Berlin|Munich|France|Paris|Marseille|Netherlands|Holland|Amsterdam|Rotterdam|Italy|Milan|Rome|Spain|Madrid|Barcelona|Switzerland|Zurich|Geneva|Sweden|Stockholm|Finland|Helsinki|Norway|Oslo|Denmark|Copenhagen|Poland|Warsaw|Austria|Vienna|Belgium|Brussels|Ireland|Dublin|Portugal|Lisbon|Greece|Athens|Czech|Czechia|Prague|Hungary|Budapest|Romania|Bucharest|Bulgaria|Sofia|Ukraine|Kyiv|Kiev|Russia|Moscow|Turkey|Istanbul|Iceland|Reykjavik|Luxembourg|Malta|Cyprus|Estonia|Tallinn|Latvia|Riga|Lithuania|Vilnius|Slovakia|Bratislava|Slovenia|Ljubljana|Croatia|Zagreb|Serbia|Belgrade|Bosnia|Montenegro|Macedonia|Albania|Moldova|Belarus|Minsk|Monaco|Liechtenstein|Andorra|San\s*Marino|Vatican)(?![A-Za-z]|\.\d)/i,
+      /🇪🇺|🇬🇧|🇩🇪|🇫🇷|🇳🇱|🇮🇹|🇪🇸|🇨🇭|🇸🇪|🇫🇮|🇳🇴|🇩🇰|🇵🇱|🇦🇹|🇧🇪|🇮🇪|🇵🇹|🇬🇷|🇨🇿|🇭🇺|🇷🇴|🇧🇬|🇺🇦|🇷🇺|🇹🇷|🇮🇸|🇱🇺|🇲🇹|🇨🇾|🇪🇪|🇱🇻|🇱🇹|🇸🇰|🇸🇮|🇭🇷|🇷🇸|🇧🇦|🇲🇪|🇲🇰|🇦🇱|🇲🇩|🇧🇾|🇲🇨|🇱🇮|🇦🇩|🇸🇲|🇻🇦|欧洲|欧盟|英国|英格兰|苏格兰|伦敦|曼彻斯特|德国|法兰克福|柏林|慕尼黑|法国|巴黎|马赛|荷兰|阿姆斯特丹|鹿特丹|意大利|米兰|罗马|西班牙|马德里|巴塞罗那|瑞士|苏黎世|日内瓦|瑞典|斯德哥尔摩|芬兰|赫尔辛基|挪威|奥斯陆|丹麦|哥本哈根|波兰|华沙|奥地利|维也纳|比利时|布鲁塞尔|爱尔兰|都柏林|葡萄牙|里斯本|希腊|雅典|捷克|布拉格|匈牙利|布达佩斯|罗马尼亚|布加勒斯特|保加利亚|索非亚|乌克兰|基辅|俄罗斯|莫斯科|圣彼得堡|土耳其|伊斯坦布尔|冰岛|雷克雅未克|卢森堡|马耳他|塞浦路斯|爱沙尼亚|塔林|拉脱维亚|里加|立陶宛|维尔纽斯|斯洛伐克|布拉迪斯拉发|斯洛文尼亚|卢布尔雅那|克罗地亚|萨格勒布|塞尔维亚|贝尔格莱德|摩尔多瓦|白俄罗斯|明斯克|摩纳哥|列支敦士登|安道尔|圣马力诺|梵蒂冈|(?<![A-Za-z])(?:Europe|European|Britain|United\s*Kingdom|England|Scotland|London|Manchester|Germany|Frankfurt|Berlin|Munich|France|Paris|Marseille|Netherlands|Holland|Amsterdam|Rotterdam|Italy|Milan|Rome|Spain|Madrid|Barcelona|Switzerland|Zurich|Geneva|Sweden|Stockholm|Finland|Helsinki|Norway|Oslo|Denmark|Copenhagen|Poland|Warsaw|Austria|Vienna|Belgium|Brussels|Ireland|Dublin|Portugal|Lisbon|Greece|Athens|Czech|Czechia|Prague|Hungary|Budapest|Romania|Bucharest|Bulgaria|Sofia|Ukraine|Kyiv|Kiev|Russia|Moscow|Turkey|Istanbul|Iceland|Reykjavik|Luxembourg|Malta|Cyprus|Estonia|Tallinn|Latvia|Riga|Lithuania|Vilnius|Slovakia|Bratislava|Slovenia|Ljubljana|Croatia|Zagreb|Serbia|Belgrade|Bosnia|Montenegro|Macedonia|Albania|Moldova|Belarus|Minsk|Monaco|Liechtenstein|Andorra|San\s*Marino|Vatican)(?![A-Za-z])/i,
+    codeRegex:
+      /(?<![A-Za-z])(?:EU|EUR|UK|GB|GBR|LHR|MAN|DE|DEU|FRA|BER|MUC|FR|PAR|MRS|NL|NLD|AMS|RTM|IT|ITA|MIL|MXP|ROM|FCO|ES|ESP|MAD|BCN|CH|CHE|ZRH|GVA|SE|SWE|ARN|FI|FIN|HEL|NO|NOR|OSL|DK|DNK|CPH|PL|POL|WAW|AT|AUT|VIE|BE|BEL|BRU|IE|IRL|DUB|PT|PRT|LIS|GR|GRC|ATH|CZ|CZE|PRG|HU|HUN|BUD|RO|ROU|OTP|BG|BGR|SOF|UA|UKR|KBP|RU|RUS|MOW|SVO|LED|TR|TUR|IST|IS|ISL|KEF|LU|LUX|MT|MLT|MLA|CY|CYP|LCA|EE|EST|TLL|LV|LVA|RIX|LT|LTU|VNO|SK|SVK|BTS|SI|SVN|LJU|HR|HRV|ZAG|RS|SRB|BEG|BA|BIH|ME|MNE|MK|MKD|AL|ALB|MD|MDA|BY|BLR|MSQ|MC|MCO|LI|LIE|AD|AND|SM|SMR|VA|VAT)(?![A-Za-z]|\.\d|&)/,
     icon: 'https://raw.githubusercontent.com/aaANDkk/Qure_Style_SVG/main/icon/svg/flag/European_Union.svg',
     default: true,
   },
@@ -678,6 +680,14 @@ function toMatchableName(name) {
   return typeof name === 'string' ? name.replace(invisibleCharsRegex, '') : name;
 }
 
+const euFlags = new Set([
+  '🇪🇺', '🇬🇧', '🇩🇪', '🇫🇷', '🇳🇱', '🇮🇹', '🇪🇸', '🇨🇭', '🇸🇪', '🇫🇮', '🇳🇴', '🇩🇰',
+  '🇵🇱', '🇦🇹', '🇧🇪', '🇮🇪', '🇵🇹', '🇬🇷', '🇨🇿', '🇭🇺', '🇷🇴', '🇧🇬', '🇺🇦', '🇷🇺',
+  '🇹🇷', '🇮🇸', '🇱🇺', '🇲🇹', '🇨🇾', '🇪🇪', '🇱🇻', '🇱🇹', '🇸🇰', '🇸🇮', '🇭🇷', '🇷🇸',
+  '🇧🇦', '🇲🇪', '🇲🇰', '🇦🇱', '🇲🇩', '🇧🇾', '🇲🇨', '🇱🇮', '🇦🇩', '🇸🇲', '🇻🇦',
+]);
+const allFlagRegex = /\p{RGI_Emoji_Flag_Sequence}/gv;
+
 const regionMatchCache = new Map();
 function getMatchedRegions(proxyName) {
   if (regionMatchCache.has(proxyName)) {
@@ -685,7 +695,19 @@ function getMatchedRegions(proxyName) {
   }
 
   const matchableName = toMatchableName(proxyName);
-  const regions = allRegionDefinitions.filter((region) => region.regex.test(matchableName));
+  const flagsInName = matchableName.match(allFlagRegex) || [];
+  const hasNonEuFlag = flagsInName.some((flag) => !euFlags.has(flag));
+  const nonEuActiveMatched =
+    hasNonEuFlag ||
+    activeRegionDefinitions.some((region) => region.name !== '欧洲' && region.regex.test(matchableName));
+
+  const regions = allRegionDefinitions.filter((region) => {
+    if (region.regex.test(matchableName)) return true;
+    if (region.codeRegex && !nonEuActiveMatched) {
+      return region.codeRegex.test(matchableName);
+    }
+    return false;
+  });
   regionMatchCache.set(proxyName, regions);
 
   return regions;

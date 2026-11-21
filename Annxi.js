@@ -58,6 +58,7 @@ const prefixRules = [
 // 国内大厂与常用服务精细直连规则
 const directRules = [
   'RULE-SET,geolocation-cn,直连',
+  'RULE-SET,category-ai-cn,直连',
   'RULE-SET,games_cn,直连',
   'RULE-SET,nvidia_cn,直连',
   'RULE-SET,apple_cn,直连',
@@ -282,6 +283,12 @@ const baseRuleProviders = {
     path: './ruleset/geolocation-cn.mrs',
     'path-in-bundle': 'geo/geosite/geolocation-cn.mrs',
   },
+  'category-ai-cn': {
+    ...ruleProviderCommonDomain,
+    url: `${ruleSetBaseUrl}geosite/category-ai-cn.mrs`,
+    path: './ruleset/category-ai-cn.mrs',
+    'path-in-bundle': 'geo/geosite/category-ai-cn.mrs',
+  },
   cn_ip: {
     ...ruleProviderCommonIpcidr,
     url: `${ruleSetBaseUrl}geoip/cn.mrs`,
@@ -460,6 +467,12 @@ const serviceConfigs = [
         path: './ruleset/ai.mrs',
         'path-in-bundle': 'geo/geosite/category-ai-!cn.mrs',
       },
+      openai_ip: {
+        ...ruleProviderCommonIpcidr,
+        url: `${ruleSetBaseUrl}geoip/openai.mrs`,
+        path: './ruleset/openai_ip.mrs',
+        'path-in-bundle': 'geo/geoip/openai.mrs',
+      },
     },
     icon: `${iconBaseUrl}OpenAI.svg`,
     rules: [
@@ -468,6 +481,7 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,intercom.io,AI',
       'DOMAIN-SUFFIX,intercomcdn.com,AI',
     ],
+    ipRules: ['RULE-SET,openai_ip,AI'],
   },
   {
     name: 'Google',
@@ -832,12 +846,7 @@ function filterAndNormalizeProxies(config) {
     filteredProxies = next;
   }
 
-  const proxyProviders = config['proxy-providers'] || config.proxyProviders;
-  const hasProviders = Boolean(
-    proxyProviders && typeof proxyProviders === 'object' && Object.keys(proxyProviders).length > 0,
-  );
-
-  if (!filteredProxies.length && !hasProviders) {
+  if (!filteredProxies.length) {
     throw new Error('配置文件中未找到任何代理节点，请使用机场提供的配置文件进行覆写');
   }
 
@@ -1050,7 +1059,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
       ...adBlockService.baseOption,
       name: adBlockService.name,
       icon: adBlockService.icon,
-      proxies: ['REJECT', 'REJECT-DROP', 'PASS'],
+      proxies: ['REJECT', 'PASS', '直连', '默认代理'],
     };
     if (adBlockService) {
       priorityRules.push(...adBlockService.rules);
@@ -1120,10 +1129,11 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     };
   }
 
+  const standardDefaultProxies = [...groupNamesOfSelect, ...baseGroupNames];
   functionalGroups.push({
     ...selectBaseOption,
     name: '默认代理',
-    proxies: [...groupNamesOfSelect, ...baseGroupNames],
+    proxies: standardDefaultProxies.length > 0 ? standardDefaultProxies : ['DIRECT'],
     icon: `${iconBaseUrl}Proxy.svg`,
   });
 
@@ -1147,7 +1157,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     const groupProxies = svc.includeAll
       ? [...allProxiesNames]
       : svc.reject
-        ? ['REJECT', 'REJECT-DROP', 'PASS']
+        ? ['REJECT', 'PASS', '直连', '默认代理']
         : svc.onlyDefaultAndDirect
           ? ['默认代理', '直连']
           : [
@@ -1676,10 +1686,9 @@ function simplifyDomainPolicy(policy) {
 
 /**
  * 构建 DNS 与 hosts：保留私有 DNS、节点域名 policy/fake-ip-filter 与命中节点域名的订阅 hosts，并按 hosts 改写节点 server
- * hosts改写条件（满足任意一个条件即可）：
- * 1. proxy-server-nameserver 不存在或为空
- * 2. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含非空的 listen 值
- * 3. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含 127.0.0.1 并且 listen 包含 0.0.0.0
+ * hosts改写条件（仅在检测到本地 listen DNS 劫持时触发，其余交由内核 use-hosts 处理以保护原始域名 SNI）：
+ * 1. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含非空的 listen 值
+ * 2. proxy-server-nameserver 有且仅有一个 DNS 并且该 DNS 包含 127.0.0.1 并且 listen 包含 0.0.0.0
  */
 function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
   const minimalModeEnabled = ruleOptionsEnable.极简国内外分流模式;
@@ -1695,17 +1704,13 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
         : [rawProxyServerNameservers]
   ).filter((dns) => String(dns ?? '').trim() !== '');
 
-  const isProxyServerNameserverEmpty = proxyServerNameservers.length === 0;
-
-  const shouldRewriteByListen =
+  const shouldRewriteByHosts =
     proxyServerNameservers.length === 1 &&
     typeof listenValue === 'string' &&
     listenValue.length > 0 &&
     (proxyServerNameservers.some((dns) => String(dns).toLowerCase().includes(listenValue.toLowerCase())) ||
       (listenValue.includes('0.0.0.0') &&
         proxyServerNameservers.some((dns) => String(dns).toLowerCase().includes('127.0.0.1'))));
-
-  const shouldRewriteByHosts = isProxyServerNameserverEmpty || shouldRewriteByListen;
 
   const mappedProxies = shouldRewriteByHosts ? applyHostsToProxies(filteredProxies, config.hosts) : filteredProxies;
 

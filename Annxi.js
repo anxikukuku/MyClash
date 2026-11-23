@@ -1937,8 +1937,8 @@ function main(config) {
   newConfig['rule-providers'] = finalRuleProviders;
 
   newConfig['rules'] = [
-    ...priorityRules,
     ...prefixRules,
+    ...priorityRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...directRules,
 

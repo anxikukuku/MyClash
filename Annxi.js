@@ -884,18 +884,34 @@ function filterAndNormalizeProxies(config) {
 
 // --- 构建地区策略组与排序 ---
 
-function sortByGroupOrder(services) {
-  if (!groupOrder.length) return services;
+const groupOrderKeys = (() => {
+  if (!groupOrder.length) return null;
+
+  const names = serviceConfigs.map((svc) => svc.name);
+  const anchorIndex = names.indexOf('AdBlock');
+  names.splice(anchorIndex < 0 ? names.length : anchorIndex, 0, ...customRoutes.map((route) => route?.name));
+  names.push('直连', ...allRegionDefinitions.map((region) => region.name), '其他节点');
 
   const rank = new Map(groupOrder.map((name, index) => [name, index]));
+  const keys = new Map();
   let last = -1;
+  names.forEach((name, index) => {
+    const order = rank.get(name);
+    if (order !== undefined) last = order;
+    if (typeof name === 'string' && !keys.has(name)) keys.set(name, [order ?? last + 0.5, index]);
+  });
+  return keys;
+})();
+
+function sortByGroupOrder(services) {
+  if (!groupOrderKeys) return services;
+
+  const keyOf = (name) =>
+    groupOrderKeys.get(name) ??
+    groupOrderKeys.get(name.replace(/-(?:自动选择|自动回退|负载均衡)$/, '')) ?? [Infinity, Infinity];
   return services
-    .map((svc, index) => {
-      const order = rank.get(svc.name) ?? rank.get(svc.name.replace(/-(?:自动选择|自动回退|负载均衡)$/, ''));
-      if (order !== undefined) last = order;
-      return { svc, index, key: order !== undefined ? order : last + 0.5 };
-    })
-    .sort((a, b) => a.key - b.key || a.index - b.index)
+    .map((svc, index) => ({ svc, index, key: keyOf(svc.name) }))
+    .sort((a, b) => a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.index - b.index)
     .map((entry) => entry.svc);
 }
 
@@ -1818,6 +1834,7 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
     'fake-ip-range': '198.18.0.1/15',
     'fake-ip-range6': '2001:2::1/48',
     'fake-ip-filter': [
+      '*',
       'rule-set:private',
       'rule-set:fakeip_filter',
       'rule-set:connectcheck',

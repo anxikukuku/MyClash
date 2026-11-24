@@ -60,6 +60,7 @@ const directRules = [
   'RULE-SET,geolocation-cn,直连',
   'RULE-SET,category-ai-cn,直连',
   'RULE-SET,games_cn,直连',
+  'RULE-SET,games_download_cn,直连',
   'RULE-SET,nvidia_cn,直连',
   'RULE-SET,apple_cn,直连',
   'RULE-SET,adobe_cn,直连',
@@ -75,6 +76,25 @@ const excludeFilter =
 const blockForeignQuic = [
   'AND,((NETWORK,UDP),(DST-PORT,443),(NOT,((OR,((RULE-SET,cn),(RULE-SET,cn_ip,no-resolve)))))),REJECT',
 ];
+
+// 自动补全 udp: true 的代理协议类型（确保关闭禁用 QUIC 时节点也能正常转发 UDP 流量）
+const udpOptionalProxyTypes = new Set([
+  'ss',
+  'ssr',
+  'socks5',
+  'vmess',
+  'vless',
+  'trojan',
+  'wireguard',
+  'gost-relay',
+  'mieru',
+  'anytls',
+  'masque',
+  'trusttunnel',
+  'tailscale',
+  'zerotier',
+  'easytier',
+]);
 
 // 直连节点
 const directProxies = [
@@ -254,6 +274,12 @@ const baseRuleProviders = {
     url: `${ruleSetBaseUrl}geosite/category-games@cn.mrs`,
     path: './ruleset/category-games@cn.mrs',
     'path-in-bundle': 'geo/geosite/category-games@cn.mrs',
+  },
+  games_download_cn: {
+    ...ruleProviderCommonDomain,
+    url: `${ruleSetBaseUrl}geosite/category-game-platforms-download@cn.mrs`,
+    path: './ruleset/category-game-platforms-download@cn.mrs',
+    'path-in-bundle': 'geo/geosite/category-game-platforms-download@cn.mrs',
   },
   nvidia_cn: {
     ...ruleProviderCommonDomain,
@@ -461,7 +487,7 @@ const serviceConfigs = [
   {
     name: 'AI',
     baseOption: selectBaseOption,
-    defaultSelected: '美国',
+    defaultSelected: ['美国', '台湾', '新加坡', '日本', '欧洲'],
     providers: {
       ai: {
         ...ruleProviderCommonDomain,
@@ -488,6 +514,7 @@ const serviceConfigs = [
   {
     name: 'Google',
     baseOption: selectBaseOption,
+    defaultSelected: ['美国', '台湾', '新加坡', '日本', '欧洲'],
     providers: {
       google: {
         ...ruleProviderCommonDomain,
@@ -873,13 +900,19 @@ function filterAndNormalizeProxies(config) {
   }
 
   const ipVersionPreference = getIpVersionPreference();
-  if (ipVersionPreference) {
-    return filteredProxies.map((proxy) =>
-      proxy['ip-version'] === ipVersionPreference ? proxy : { ...proxy, 'ip-version': ipVersionPreference },
-    );
-  }
-
-  return filteredProxies;
+  return filteredProxies.map((proxy) => {
+    const type = String(proxy.type ?? '').toLowerCase();
+    const needsUdp =
+      proxy.udp == null &&
+      (udpOptionalProxyTypes.has(type) || (type === 'snell' && Number(proxy.version) >= 3));
+    const needsIpPref = ipVersionPreference && proxy['ip-version'] !== ipVersionPreference;
+    if (!needsUdp && !needsIpPref) return proxy;
+    return {
+      ...proxy,
+      ...(needsUdp && { udp: true }),
+      ...(needsIpPref && { 'ip-version': ipVersionPreference }),
+    };
+  });
 }
 
 // --- 构建地区策略组与排序 ---
@@ -1206,7 +1239,12 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
               ...(svc.direct ? ['直连'] : []),
             ];
 
-    const selected = groupProxies.includes(svc.defaultSelected) ? svc.defaultSelected : undefined;
+    const defaultCandidates = Array.isArray(svc.defaultSelected)
+      ? svc.defaultSelected
+      : svc.defaultSelected !== undefined
+        ? [svc.defaultSelected]
+        : [];
+    const selected = defaultCandidates.find((name) => groupProxies.includes(name));
 
     if (!svc.reject) {
       for (const rule of svc.rules || []) {
@@ -1937,6 +1975,23 @@ function main(config) {
     server: 'ntp.aliyun.com',
     port: 123,
     interval: 60,
+  };
+
+  newConfig['sniffer'] = {
+    enable: true,
+    'parse-pure-ip': true,
+    sniff: {
+      HTTP: {
+        ports: [80, '8080-8880'],
+        'override-destination': true,
+      },
+      TLS: {
+        ports: [443, 8443],
+      },
+      QUIC: {
+        ports: [443, 8443],
+      },
+    },
   };
 
   newConfig['tun'] = {

@@ -323,24 +323,6 @@ const baseRuleProviders = {
     path: './ruleset/cn_ip.mrs',
     'path-in-bundle': 'geo/geoip/cn.mrs',
   },
-  us_ip: {
-    ...ruleProviderCommonIpcidr,
-    url: `${ruleSetBaseUrl}geoip/us.mrs`,
-    path: './ruleset/us_ip.mrs',
-    'path-in-bundle': 'geo/geoip/us.mrs',
-  },
-  nl_ip: {
-    ...ruleProviderCommonIpcidr,
-    url: `${ruleSetBaseUrl}geoip/nl.mrs`,
-    path: './ruleset/nl_ip.mrs',
-    'path-in-bundle': 'geo/geoip/nl.mrs',
-  },
-  sg_ip: {
-    ...ruleProviderCommonIpcidr,
-    url: `${ruleSetBaseUrl}geoip/sg.mrs`,
-    path: './ruleset/sg_ip.mrs',
-    'path-in-bundle': 'geo/geoip/sg.mrs',
-  },
 
   // --- 代理规则集 ---
   'geolocation-!cn': {
@@ -1933,7 +1915,6 @@ function main(config) {
   const generatedRegionGroups = ruleOptionsEnable.极简国内外分流模式
     ? []
     : buildRegionGroups(filteredProxies);
-  const generatedGroupNames = new Set(generatedRegionGroups.map((g) => g.name));
 
   const {
     globalGroup,
@@ -2013,21 +1994,6 @@ function main(config) {
     ...priorityRules,
     ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...directRules,
-
-    // Telegram 按 DC 所在国家就近分流（DC1/3->美国, DC2/4->欧洲[荷兰], DC5->新加坡）
-    ...(ruleOptionsEnable.Telegram && !ruleOptionsEnable.极简国内外分流模式
-      ? [
-          ...(generatedGroupNames.has('美国')
-            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,us_ip)),美国']
-            : []),
-          ...(generatedGroupNames.has('欧洲')
-            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,nl_ip)),欧洲']
-            : []),
-          ...(generatedGroupNames.has('新加坡')
-            ? ['AND,((OR,((RULE-SET,telegram),(RULE-SET,telegram_ip))),(RULE-SET,sg_ip)),新加坡']
-            : []),
-        ]
-      : []),
 
     ...functionalRules,
     'RULE-SET,geolocation-!cn,默认代理',

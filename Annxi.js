@@ -53,6 +53,7 @@ const ruleOptionsEnable = {
 const prefixRules = [
   // 私有网络直连
   'RULE-SET,private,直连',
+  'RULE-SET,private_ip,直连,no-resolve',
 ];
 
 // 国内大厂与常用服务精细直连规则
@@ -65,8 +66,15 @@ const directRules = [
   'RULE-SET,apple_cn,直连',
   'RULE-SET,adobe_cn,直连',
   'RULE-SET,microsoft_cn,直连',
+  'RULE-SET,synology,直连',
   'DOMAIN-SUFFIX,ctaiot.com,直连',
 ];
+
+// 从 directRules 提取直连规则集（排除纯下载类规则集）
+const directDnsRuleProviders = directRules
+  .filter((rule) => rule.startsWith('RULE-SET,'))
+  .map((rule) => rule.split(',')[1])
+  .filter((provider) => provider && provider !== 'games_download_cn');
 
 // 定义全局排除节点的正则表达式，用于排除非地区节点
 const excludeFilter =
@@ -304,6 +312,12 @@ const baseRuleProviders = {
     url: `${ruleSetBaseUrl}geosite/microsoft@cn.mrs`,
     path: './ruleset/microsoft@cn.mrs',
     'path-in-bundle': 'geo/geosite/microsoft@cn.mrs',
+  },
+  synology: {
+    ...ruleProviderCommonDomain,
+    url: `${ruleSetBaseUrl}geosite/synology.mrs`,
+    path: './ruleset/synology.mrs',
+    'path-in-bundle': 'geo/geosite/synology.mrs',
   },
   'geolocation-cn': {
     ...ruleProviderCommonDomain,
@@ -894,7 +908,9 @@ function filterAndNormalizeProxies(config) {
     const type = String(proxy.type ?? '').toLowerCase();
     const needsUdp =
       proxy.udp == null &&
-      (udpOptionalProxyTypes.has(type) || (type === 'snell' && Number(proxy.version) >= 3));
+      ((udpOptionalProxyTypes.has(type) &&
+        !(type === 'masque' && String(proxy.network ?? '').toLowerCase() === 'h3-l4proxy')) ||
+        (type === 'snell' && Number(proxy.version) >= 3));
     const needsIpPref = ipVersionPreference && proxy['ip-version'] !== ipVersionPreference;
     if (!needsUdp && !needsIpPref) return proxy;
     return {
@@ -1896,9 +1912,12 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
     matchedProxyPolicy[domain] = stripedDns;
   }
 
-  if (privateDNS.length > 0 && Object.keys(matchedProxyPolicy).length === 0) {
+  if (privateDNS.length > 0) {
+    const coveredPatterns = Object.keys(matchedProxyPolicy);
     for (const domain of proxyDomains) {
-      matchedProxyPolicy[domain] = privateDNS;
+      if (!coveredPatterns.some((pattern) => matchDomainPattern(pattern, domain))) {
+        matchedProxyPolicy[domain] = privateDNS;
+      }
     }
   }
 
@@ -1923,6 +1942,8 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
   delete nameserverPolicy['rule-set:cn'];
   delete nameserverPolicy['rule-set:geolocation-!cn'];
 
+  nameserverPolicy[`rule-set:${directDnsRuleProviders.join(',')}`] = chinaDNS;
+
   if (ruleOptionsEnable.优先国内DNS加速) {
     nameserverPolicy['rule-set:geolocation-!cn'] = foreignDNS;
   } else {
@@ -1944,6 +1965,7 @@ function buildDnsAndHostsConfig(config, filteredProxies, dnsPolicyGroups) {
       'rule-set:fakeip_filter',
       'rule-set:connectcheck',
       'rule-set:cn',
+      ...directDnsRuleProviders.map((provider) => `rule-set:${provider}`),
       ...(minimalModeEnabled ? [] : ruleOptionsEnable['FCM'] ? ['rule-set:googlefcm'] : []),
       ...proxyFakeIpFilter,
     ],
@@ -2045,19 +2067,47 @@ function main(config) {
 
   newConfig['sniffer'] = {
     enable: true,
+    'force-dns-mapping': true,
     'parse-pure-ip': true,
+    'override-destination': true,
     sniff: {
       HTTP: {
-        ports: [80, '8080-8880'],
-        'override-destination': true,
+        ports: ['80', '8080-8880'],
       },
       TLS: {
-        ports: [443, 8443],
+        ports: ['443', '8443'],
       },
       QUIC: {
-        ports: [443, 8443],
+        ports: ['443', '8443'],
       },
     },
+    'skip-domain': [
+      'Mijia Cloud',
+      '+.push.apple.com',
+    ],
+    'skip-dst-address': [
+      '91.105.192.0/23',
+      '91.108.4.0/22',
+      '91.108.8.0/21',
+      '91.108.16.0/21',
+      '91.108.56.0/22',
+      '95.161.64.0/20',
+      '149.154.160.0/20',
+      '185.76.151.0/24',
+      '194.221.250.50/32',
+      '2001:67c:4e0::/44',
+      '2001:b28:f230::/44',
+      '2a0a:f280::/29',
+      '127.0.0.0/8',
+      '10.0.0.0/8',
+      '172.16.0.0/12',
+      '192.168.0.0/16',
+      '100.64.0.0/10',
+      '169.254.0.0/16',
+      '::1/128',
+      'fc00::/7',
+      'fe80::/10',
+    ],
   };
 
   newConfig['tun'] = {
@@ -2077,8 +2127,8 @@ function main(config) {
   newConfig['rules'] = [
     ...prefixRules,
     ...priorityRules,
-    ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
     ...directRules,
+    ...(ruleOptionsEnable.屏蔽代理QUIC流量 ? blockForeignQuic : []),
 
     ...functionalRules,
     'RULE-SET,geolocation-!cn,默认代理',

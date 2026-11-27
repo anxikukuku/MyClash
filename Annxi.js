@@ -373,9 +373,9 @@ const baseRuleProviders = {
   },
 };
 
-// 策略组公共配置
+// 策略组公共配置（默认全局自动选择/自动回退/负载均衡延迟上限 1000ms）
 const groupBaseOption = {
-  timeout: 5000,
+  timeout: 1000,
   url: 'https://www.apple.com/library/test/success.html',
   'max-failed-times': 3,
   'empty-fallback': 'REJECT',
@@ -968,11 +968,18 @@ function sortByGroupOrder(services) {
     .map((entry) => entry.svc);
 }
 
+const apacRegionNames = new Set(['香港', '台湾', '日本', '新加坡']);
+
+function getRegionTimeout(name) {
+  return apacRegionNames.has(name) ? 500 : 1000;
+}
+
 function createRegionGroup(name, icon, proxies, userNodes) {
   const generateRegionAutoSelectEnabled = ruleOptionsEnable.生成地区自动选择组 || ruleOptionsEnable.隐藏地区手动选择组;
   const generateRegionFallbackEnabled = ruleOptionsEnable.生成地区自动回退组;
   const generateRegionLoadBalanceEnabled = ruleOptionsEnable.生成地区负载均衡组;
   const hideManualSelectGroupEnabled = ruleOptionsEnable.隐藏地区手动选择组;
+  const regionTimeout = getRegionTimeout(name);
 
   const region = userNodes ? { 'x-region': name } : {};
   const regionNodes = userNodes?.length ? { 'x-region-nodes': userNodes } : {};
@@ -984,6 +991,7 @@ function createRegionGroup(name, icon, proxies, userNodes) {
     const urlTestName = `${name}-自动选择`;
     extraGroups.push({
       ...urlTestBaseOption,
+      timeout: regionTimeout,
       name: urlTestName,
       ...region,
       proxies,
@@ -995,6 +1003,7 @@ function createRegionGroup(name, icon, proxies, userNodes) {
     const fallbackName = `${name}-自动回退`;
     extraGroups.push({
       ...fallbackBaseOption,
+      timeout: regionTimeout,
       name: fallbackName,
       ...region,
       proxies,
@@ -1006,6 +1015,7 @@ function createRegionGroup(name, icon, proxies, userNodes) {
     const lbName = `${name}-负载均衡`;
     extraGroups.push({
       ...loadBalanceBaseOption,
+      timeout: regionTimeout,
       name: lbName,
       ...region,
       proxies,
@@ -1016,6 +1026,7 @@ function createRegionGroup(name, icon, proxies, userNodes) {
   return [
     {
       ...selectBaseOption,
+      timeout: regionTimeout,
       name,
       icon,
       ...region,
@@ -1276,11 +1287,16 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
     };
   }
 
-  const standardDefaultProxies = [...groupNamesOfSelect, ...baseGroupNames];
+  const standardDefaultProxies = [...(hideManualSelectGroupEnabled ? [] : groupNamesOfSelect), ...baseGroupNames];
   functionalGroups.push({
     ...selectBaseOption,
     name: '默认代理',
-    proxies: standardDefaultProxies.length > 0 ? standardDefaultProxies : ['DIRECT'],
+    proxies:
+      standardDefaultProxies.length > 0
+        ? standardDefaultProxies
+        : allProxiesNames.length > 0
+          ? allProxiesNames
+          : ['DIRECT'],
     icon: `${iconBaseUrl}Proxy.svg`,
   });
 
@@ -1317,7 +1333,7 @@ function buildFunctionalGroups(filteredProxies, generatedRegionGroups) {
           : [
               '默认代理',
               ...baseGroupNames,
-              ...groupNamesOfSelect,
+              ...(hideManualSelectGroupEnabled ? [] : groupNamesOfSelect),
               ...(addAllNodesToServiceGroupsEnabled ? allProxiesNames : []),
               ...(svc.direct ? ['直连'] : []),
             ];
